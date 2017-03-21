@@ -1,17 +1,19 @@
-import * as express from 'express';
-import * as bodyParser from 'body-parser';
-import * as http from 'http';
-import { injectable, inject } from "inversify";
+import * as express from 'express'
+import * as bodyParser from 'body-parser'
+import * as http from 'http'
+import { injectable, inject } from "inversify"
 import { Logger } from './logger'
-import { Api } from './api';
-import { Config } from "./config";
-
+import { Api } from './api'
+import { Config } from "./config"
+import * as exphbs from 'express-handlebars'
+import { Sites } from "./sites";
 
 @injectable()
 export class Server {
 
     constructor( @inject(Logger) private logger: Logger, @inject(Api) private api: Api,
-        @inject(Config) private config: Config) {
+        @inject(Config) private config: Config,
+        @inject(Sites) private sites: Sites) {
     }
 
     public start() {
@@ -19,9 +21,19 @@ export class Server {
         let server = http.createServer(app);
         app.use(bodyParser.json({ limit: '5mb' }));
 
-        app.get('/', (req, res) => res.send('coach plus'))
+        let hbs = exphbs.create({
+            extname: '.hbs',
+            layoutsDir: `${__dirname}/../views/layouts/`,
+            partialsDir: `${__dirname}/../views/partials/`,
+            defaultLayout: 'main'
+        })
+
+        app.engine('.hbs', hbs.engine)
+        app.set('view engine', '.hbs')
+
         app.use('/api', this.api.getRouter());
         app.use('/static', express.static(__dirname + '/../static'))
+        app.use(this.sites.getRouter())
 
         let port = this.config.get('port', 4000)
 
