@@ -13,10 +13,7 @@ import { authenticationMiddleware } from '../auth'
 @injectable()
 export class UserApi {
 
-    x = {}
-
     constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config) { 
-        this.x = {}
     }
 
     getRouter() {
