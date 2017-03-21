@@ -21,6 +21,7 @@ export class Server {
 
         app.get('/', (req, res) => res.send('coach plus'))
         app.use('/api', this.api.getRouter());
+        app.use('/static', express.static(__dirname + '/../static'))
 
         let port = this.config.get('port', 4000)
 
