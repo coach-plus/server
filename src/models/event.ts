@@ -12,7 +12,7 @@ export interface IEvent {
 export interface IEventModel extends IEvent, mongoose.Document { }
 
 let eventSchema = new mongoose.Schema({
-    team: mongoose.Types.ObjectId,
+    team: mongoose.SchemaTypes.ObjectId,
     name: String,
     description: String,
     start: Date,

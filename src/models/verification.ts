@@ -10,7 +10,7 @@ export interface IVerification {
 export interface IVerificationModel extends IVerification, mongoose.Document { }
 
 let verificationSchema = new mongoose.Schema({
-    user: mongoose.Types.ObjectId,
+    user: mongoose.SchemaTypes.ObjectId,
     token: String
 });
 

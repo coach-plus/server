@@ -13,10 +13,10 @@ export interface IUser {
 export interface IUserModel extends IUser, mongoose.Document { }
 
 let userSchema = new mongoose.Schema({
-    firstname: string,
-    lastname: string,
+    firstname: String,
+    lastname: String,
     email: { unique: true, type: String },
-    password: string,
+    password: String,
     emailVerified: { type: Boolean, default: false },
     registered: { type: Date, default: Date.now }
 })

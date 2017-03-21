@@ -12,8 +12,8 @@ export interface IMembership {
 export interface IMembershipModel extends IMembership, mongoose.Document { }
 
 let membershipSchema = new mongoose.Schema({
-    user: mongoose.Types.ObjectId,
-    team: mongoose.Types.ObjectId,
+    user: mongoose.SchemaTypes.ObjectId,
+    team: mongoose.SchemaTypes.ObjectId,
     role: { type: String, default: 'user' }
 })
 

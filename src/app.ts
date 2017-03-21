@@ -5,6 +5,7 @@ import { Logger } from './logger'
 import { Api } from './api'
 import { Server } from './server'
 import { Config } from './config'
+import { UserApi } from "./api/user";
 
 // use ES6 Promise for mongoose
 (<any>mongoose).Promise = global.Promise
@@ -13,8 +14,10 @@ let container = new Container()
 
 container.bind<Logger>(Logger).toSelf().inSingletonScope()
 container.bind<Config>(Config).toSelf().inSingletonScope()
-container.bind<Api>(Api).toSelf().inSingletonScope()
+
 container.bind<Server>(Server).toSelf().inSingletonScope()
+container.bind<Api>(Api).toSelf().inSingletonScope()
+container.bind<UserApi>(UserApi).toSelf().inSingletonScope()
 
 let logger = container.get<Logger>(Logger)
 let config = container.get<Config>(Config)

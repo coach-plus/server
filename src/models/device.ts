@@ -12,7 +12,7 @@ export interface IDevice {
 export interface IDeviceModel extends IDevice, mongoose.Document { }
 
 let deviceSchema = new mongoose.Schema({
-    user: mongoose.Types.ObjectId,
+    user: mongoose.SchemaTypes.ObjectId,
     system: String,
     deviceId: String,
     pushId: String

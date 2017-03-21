@@ -12,8 +12,8 @@ export interface IParticipation {
 export interface IParticipationModel extends IParticipation, mongoose.Document { }
 
 let participationSchema = new mongoose.Schema({
-    user: mongoose.Types.ObjectId,
-    event: mongoose.Types.ObjectId,
+    user: mongoose.SchemaTypes.ObjectId,
+    event: mongoose.SchemaTypes.ObjectId,
     willAttend: Boolean,
     didAttend: Boolean
 })
