@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "noImplicitAny": false,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "experimentalDecorators": true,
+        "outDir": "../dist",
+        "sourceMap": true,
+        "target": "es6",
+        "types": [
+            "reflect-metadata"
+        ],
+        "typeRoots": [
+            "../node_modules/@types"
+        ]
+    },
+    "include": [
+        "./**/*"
+    ],
+    "exclude": [
+        "**/*.spec.ts"
+    ]
+}
