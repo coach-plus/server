@@ -1,0 +1,21 @@
+{
+  "apps" : [
+    {
+      "name"      : "Coach+ Server",
+      "script"    : "server/dist/app.js",
+      "env_production" : {
+        "NODE_ENV": "production"
+      }
+    }
+  ],
+  "deploy" : {
+    "staging" : {
+      "user" : "coach-plus",
+      "host" : "dev.coach.plus",
+      "ref"  : "origin/master",
+      "repo" : "https://github.com/coach-plus/server.git",
+      "path" : "/home/coach-plus/staging/server",
+      "post-deploy" : "cd server && npm install && cd ../client && npm install && ng build && cd .. && pm2 startOrRestart ecosystem.json"
+    }
+  }
+}
