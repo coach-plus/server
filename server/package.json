@@ -11,6 +11,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "axios": "^0.15.3",
     "bcrypt": "^1.0.2",
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
@@ -20,9 +21,11 @@
     "jsonwebtoken": "^7.3.0",
     "mongoose": "^4.7.7",
     "reflect-metadata": "^0.1.9",
+    "uuid": "^3.0.1",
     "winston": "^2.3.0"
   },
   "devDependencies": {
+    "@types/axios": "^0.14.0",
     "@types/bcrypt": "^1.0.0",
     "@types/body-parser": "0.0.33",
     "@types/express": "^4.0.34",
@@ -30,6 +33,7 @@
     "@types/jsonwebtoken": "^7.2.0",
     "@types/mongoose": "^4.7.3",
     "@types/node": "^6.0.54",
+    "@types/uuid": "^2.0.29",
     "typescript": "^2.1.5"
   }
 }

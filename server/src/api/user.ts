@@ -3,23 +3,25 @@ import * as bcrypt from 'bcrypt'
 import * as jwt from 'jsonwebtoken'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Verification } from '../models'
+import { User, Verification, IUserModel, IUser, IVerificationModel } from '../models'
 import { validate, registerUserSchema, loginUserSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response } from '../interfaces'
 import { authenticationMiddleware } from '../auth'
+import { EmailVerification } from '../emailverification'
 
 
 @injectable()
 export class UserApi {
 
-    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config) { 
+    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, @inject(EmailVerification) private emailverification: EmailVerification) {
     }
 
     getRouter() {
         let router = express.Router()
         router.post('/register', this.register.bind(this))
         router.post('/login', this.login.bind(this))
+        router.post('/verification/:token', this.verifyEmail.bind(this))
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/secret', (req, res) => res.send('secret'))
         return router
@@ -39,8 +41,9 @@ export class UserApi {
                 res.status(400).send({ error: 'email address is already registered' })
                 return
             }
-            User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname }).then(() => {
+            User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname }).then((createdUser: IUserModel) => {
                 res.status(201).send({})
+                this.emailverification.create(createdUser)
             }).catch(error => {
                 this.logger.error(error)
                 res.status(500).send({ error: 'internal error' })
@@ -79,6 +82,41 @@ export class UserApi {
         }).catch((error) => {
             res.status(400).send({ error: 'credentials are not correct' })
         })
+    }
+
+    verifyEmail(req: Request, res: Response) {
+        let token = req.params.token
+        if (!token) {
+            res.status(404).send({})
+            return
+        }
+
+        Verification.findOne({ token: token }).populate('user').exec().then((verification: IVerificationModel) => {
+            if (!verification) {
+                res.status(404).send({})
+                return
+            }
+
+            let user = <IUserModel>verification.user
+            user.emailVerified = true
+
+            user.save().then(() => {
+                verification.remove().then(() => {
+                    res.status(200).send({})
+                }).catch((err) => {
+                    this.logger.error(err)
+                    res.status(500).send({})
+                })
+            }).catch((err) => {
+                this.logger.error(err)
+                res.status(500).send({})
+            })
+        }).catch((err) => {
+            this.logger.error(err)
+            res.status(500).send({})
+        })
+
+
     }
 
     private checkUserCrendentials(email: string, password: string) {

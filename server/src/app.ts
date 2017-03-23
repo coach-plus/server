@@ -7,6 +7,9 @@ import { Server } from './server'
 import { Config } from './config'
 import { UserApi } from "./api/user"
 import { Sites } from "./sites"
+import { Mailer } from './mailer'
+import { PushServer } from './pushserver'
+import { EmailVerification } from './emailverification'
 
 // use ES6 Promise for mongoose
 (<any>mongoose).Promise = global.Promise
@@ -21,6 +24,11 @@ container.bind<Api>(Api).toSelf().inSingletonScope()
 container.bind<UserApi>(UserApi).toSelf().inSingletonScope()
 
 container.bind<Sites>(Sites).toSelf().inSingletonScope()
+
+container.bind<PushServer>(PushServer).toSelf().inSingletonScope()
+container.bind<Mailer>(Mailer).toSelf().inSingletonScope()
+
+container.bind<EmailVerification>(EmailVerification).toSelf().inSingletonScope()
 
 let logger = container.get<Logger>(Logger)
 let config = container.get<Config>(Config)

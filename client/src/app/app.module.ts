@@ -7,17 +7,23 @@ import { RouterModule, Routes } from '@angular/router'
 
 import { AppComponent } from './app.component';
 import { RegisterComponent } from './register/register.component';
+import { VerificationComponent } from './verification/verification.component';
 
 const appRoutes: Routes = [
   {
     path: 'register', component: RegisterComponent
+  },
+  {
+    path: 'verification/:token',
+    component: VerificationComponent
   }
 ]
 
 @NgModule({
   declarations: [
     AppComponent,
-    RegisterComponent
+    RegisterComponent,
+    VerificationComponent
   ],
   imports: [
     BrowserModule,

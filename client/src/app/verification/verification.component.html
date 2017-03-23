@@ -1,0 +1,18 @@
+<h1>E-Mail Verification</h1>
+
+<div *ngIf="!token">
+  <p>Loading..</p>
+</div>
+
+<div *ngIf="token">
+  <p>Token is: {{token}}</p>
+
+  <div *ngIf="!verified">
+    <p>Loading verification</p>
+  </div>
+
+  <div *ngIf="verified">
+    <p>You are now verified!</p>
+  </div>
+
+</div>
