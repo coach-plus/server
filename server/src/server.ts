@@ -6,7 +6,9 @@ import { Logger } from './logger'
 import { Api } from './api'
 import { Config } from "./config"
 import * as exphbs from 'express-handlebars'
-import { Sites } from "./sites";
+import { Sites } from "./sites"
+import * as fs from 'fs'
+
 
 @injectable()
 export class Server {
@@ -38,7 +40,12 @@ export class Server {
         app.use('/static', express.static(__dirname + '/../../client/static'));
         app.use('/api', this.api.getRouter());
         app.use('/static', express.static(__dirname + '/../static'))
-        app.use('/apple-app-site-association', express.static(__dirname + '/../assets/apple-app-site-association'))
+        app.get('/apple-app-site-association', (req, res) => {
+            fs.readFile(__dirname + '/../assets/apple-app-site-association', (err, data) => {
+                res.contentType('application/json')
+                res.send(data)
+            })
+        })
         app.use(this.sites.getRouter())
 
         let port = this.config.get('port', 4000)
