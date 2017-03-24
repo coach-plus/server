@@ -38,6 +38,7 @@ export class Server {
         app.use('/static', express.static(__dirname + '/../../client/static'));
         app.use('/api', this.api.getRouter());
         app.use('/static', express.static(__dirname + '/../static'))
+        app.use('/apple-app-site-association', express.static(__dirname + '/../assets/apple-app-site-association'))
         app.use(this.sites.getRouter())
 
         let port = this.config.get('port', 4000)

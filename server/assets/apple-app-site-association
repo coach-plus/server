@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+        {
+            "appID": "FCE6372QZX.com.mathandoro.coachplus",
+            "paths": ["*"]
+        }
+    ]
+  }
+}
