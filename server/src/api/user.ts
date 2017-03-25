@@ -42,7 +42,8 @@ export class UserApi {
                 return
             }
             User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname }).then((createdUser: IUserModel) => {
-                res.status(201).send({})
+                let token = this.createJWT(createdUser)
+                res.status(201).send({ token: token })
                 this.emailverification.create(createdUser)
             }).catch(error => {
                 this.logger.error(error)
@@ -57,19 +58,8 @@ export class UserApi {
         let email = req.body.email;
         let password = req.body.password;
         this.checkUserCrendentials(email, password).then(user => {
-            let tokenBody = {
-                id: user.id,
-                email: user.email,
-                firstname: user.firstname,
-                lastname: user.lastname,
-                role: user.role
-            }
-            let token: any = null
-            try {
-                token = jwt.sign(tokenBody, this.config.get('jwt_secret'), {})
-            }
-            catch (error) {
-                this.logger.error(error)
+            let token = this.createJWT(user)
+            if (!token) {
                 res.status(500).send({ error: 'internal error' })
                 return
             }
@@ -117,6 +107,24 @@ export class UserApi {
         })
 
 
+    }
+
+    private createJWT(user: IUserModel) {
+        let tokenBody = {
+            id: user._id,
+            email: user.email,
+            firstname: user.firstname,
+            lastname: user.lastname
+        }
+        let token: any = null
+        try {
+            token = jwt.sign(tokenBody, this.config.get('jwt_secret'), {})
+        }
+        catch (error) {
+            this.logger.error(error)
+        }
+
+        return token
     }
 
     private checkUserCrendentials(email: string, password: string) {
