@@ -6,7 +6,7 @@ import { inject, injectable } from 'inversify'
 import { User, Verification, IUserModel, IUser, IVerificationModel } from '../models'
 import { validate, registerUserSchema, loginUserSchema } from '../validation'
 import { Config } from '../config'
-import { Request, Response } from '../interfaces'
+import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware } from '../auth'
 import { EmailVerification } from '../emailverification'
 
@@ -38,16 +38,30 @@ export class UserApi {
         let hashedPassword = bcrypt.hashSync(password, salt)
         User.findOne({ email: payload.email }).then(userModel => {
             if (userModel != null) {
-                res.status(400).send({ error: 'email address is already registered' })
+                let result: IApiResponse = {
+                    success: false,
+                    message: 'email address is already registered'
+                }
+                res.status(400).send(result)
                 return
             }
             User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname }).then((createdUser: IUserModel) => {
                 let token = this.createJWT(createdUser)
-                res.status(201).send({ token: token })
+                let result: IApiResponse = {
+                    success: true,
+                    content: {
+                        token: token
+                    }
+                }
+                res.status(201).send(result)
                 this.emailverification.create(createdUser)
             }).catch(error => {
                 this.logger.error(error)
-                res.status(500).send({ error: 'internal error' })
+                let result: IApiResponse = {
+                    success: false,
+                    message: 'internal error'
+                }
+                res.status(500).send(result)
             })
         })
     }
@@ -60,30 +74,50 @@ export class UserApi {
         this.checkUserCrendentials(email, password).then(user => {
             let token = this.createJWT(user)
             if (!token) {
-                res.status(500).send({ error: 'internal error' })
+                let result: IApiResponse = {
+                    success: false,
+                    message: 'internal error'
+                }
+                res.status(500).send(result)
                 return
             }
-            res.status(200).send({
-                token: token,
-                firstame: user.firstname,
-                lastname: user.lastname,
-                role: user.role
-            })
+            let result: IApiResponse = {
+                success: true,
+                content: {
+                    token: token,
+                    firstame: user.firstname,
+                    lastname: user.lastname,
+                    role: user.role
+                }
+            }
+            res.status(200).send(result)
         }).catch((error) => {
-            res.status(400).send({ error: 'credentials are not correct' })
+            let result: IApiResponse = {
+                success: false,
+                message: 'credentials are not correct'
+            }
+            res.status(400).send(result)
         })
     }
 
     verifyEmail(req: Request, res: Response) {
         let token = req.params.token
         if (!token) {
-            res.status(404).send({})
+            let result: IApiResponse = {
+                success: false,
+                message: 'Not found'
+            }
+            res.status(404).send(result)
             return
         }
 
         Verification.findOne({ token: token }).populate('user').exec().then((verification: IVerificationModel) => {
             if (!verification) {
-                res.status(404).send({})
+                let result: IApiResponse = {
+                    success: false,
+                    message: 'Not found'
+                }
+                res.status(404).send(result)
                 return
             }
 
@@ -92,18 +126,33 @@ export class UserApi {
 
             user.save().then(() => {
                 verification.remove().then(() => {
-                    res.status(200).send({})
+                    let result: IApiResponse = {
+                        success: true
+                    }
+                    res.status(200).send(result)
                 }).catch((err) => {
                     this.logger.error(err)
-                    res.status(500).send({})
+                    let result: IApiResponse = {
+                        success: false,
+                        message: 'Internal error'
+                    }
+                    res.status(500).send(result)
                 })
             }).catch((err) => {
                 this.logger.error(err)
-                res.status(500).send({})
+                let result: IApiResponse = {
+                    success: false,
+                    message: 'Internal error'
+                }
+                res.status(500).send(result)
             })
         }).catch((err) => {
             this.logger.error(err)
-            res.status(500).send({})
+            let result: IApiResponse = {
+                success: false,
+                message: 'Internal error'
+            }
+            res.status(500).send(result)
         })
 
 
