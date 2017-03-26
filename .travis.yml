@@ -11,7 +11,7 @@ before_install:
 - ssh-add /tmp/deploy_coach-plus
 install:
 - npm install -g pm2
-- npm install
+- cd server && npm install
 script:
 - cd server && npm run test
 deploy:
