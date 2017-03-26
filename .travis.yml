@@ -1,8 +1,15 @@
 language: node_js
+env:
+  - CXX=g++-4.8
 node_js:
 - '6.9'
 addons:
   ssh_known_hosts: dev.coach.plus
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - g++-4.8
 before_install:
 - openssl aes-256-cbc -K $encrypted_91fb1ba2c124_key -iv $encrypted_91fb1ba2c124_iv
   -in deploy_coach-plus.enc -out /tmp/deploy_coach-plus -d
