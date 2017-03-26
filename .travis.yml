@@ -17,6 +17,6 @@ script:
 deploy:
 - provider: script
   skip_cleanup: true
-  script: pm2 deploy staging
+  script: cd server && pm2 deploy staging
   on:
     branch: master
