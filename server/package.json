@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node ./dist/app.js",
     "build": "./node_modules/.bin/tsc -p ./src",
-    "watch": "./node_modules/.bin/tsc -p ./src -w"
+    "watch": "./node_modules/.bin/tsc -p ./src -w",
+    "test": "echo 'TODO: tests'"
   },
   "author": "",
   "license": "MIT",
