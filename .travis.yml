@@ -20,10 +20,10 @@ install:
 - npm install -g pm2
 - cd server && npm install
 script:
-- cd server && npm run test
+- npm run test
 deploy:
 - provider: script
   skip_cleanup: true
-  script: pm2 deploy ecosystem.json staging
+  script: cd ../ && pm2 deploy ecosystem.json staging
   on:
     branch: master
