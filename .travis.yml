@@ -1,0 +1,20 @@
+language: node_js
+node_js:
+- '6.9'
+addons:
+  ssh_known_hosts: dev.coach.plus
+before_install:
+- openssl aes-256-cbc -K $encrypted_91fb1ba2c124_key -iv $encrypted_91fb1ba2c124_iv
+  -in deploy_coach-plus.enc -out /tmp/deploy_coach-plus -d
+- eval "$(ssh-agent -s)"
+- chmod 600 /tmp/deploy_coach-plus
+- ssh-add /tmp/deploy_coach-plus
+install:
+- npm install -g pm2
+- npm install
+deploy:
+- provider: script
+  skip_cleanup: true
+  script: pm2 deploy staging
+  on:
+    branch: master
