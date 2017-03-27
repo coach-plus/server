@@ -14,7 +14,8 @@ import { EmailVerification } from '../emailverification'
 @injectable()
 export class UserApi {
 
-    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, @inject(EmailVerification) private emailverification: EmailVerification) {
+    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config,
+        @inject(EmailVerification) private emailverification: EmailVerification) {
     }
 
     getRouter() {
@@ -86,8 +87,7 @@ export class UserApi {
                 content: {
                     token: token,
                     firstame: user.firstname,
-                    lastname: user.lastname,
-                    role: user.role
+                    lastname: user.lastname
                 }
             }
             res.status(200).send(result)
@@ -111,33 +111,28 @@ export class UserApi {
             return
         }
 
-        Verification.findOne({ token: token }).populate('user').exec().then((verification: IVerificationModel) => {
-            if (!verification) {
-                let result: IApiResponse = {
-                    success: false,
-                    message: 'Not found'
-                }
-                res.status(404).send(result)
-                return
-            }
-
-            let user = <IUserModel>verification.user
-            user.emailVerified = true
-
-            user.save().then(() => {
-                verification.remove().then(() => {
-                    let result: IApiResponse = {
-                        success: true
-                    }
-                    res.status(200).send(result)
-                }).catch((err) => {
-                    this.logger.error(err)
+        Verification.findOne({ token: token }).populate('user').exec()
+            .then((verification: IVerificationModel) => {
+                if (!verification) {
                     let result: IApiResponse = {
                         success: false,
-                        message: 'Internal error'
+                        message: 'Not found'
                     }
-                    res.status(500).send(result)
-                })
+                    res.status(404).send(result)
+                    return
+                }
+
+                let user = <IUserModel>verification.user
+                user.emailVerified = true
+
+                return user.save()
+                    .then(() => verification.remove())
+                    .then(() => {
+                        let result: IApiResponse = {
+                            success: true
+                        }
+                        res.status(200).send(result)
+                    })
             }).catch((err) => {
                 this.logger.error(err)
                 let result: IApiResponse = {
@@ -146,16 +141,6 @@ export class UserApi {
                 }
                 res.status(500).send(result)
             })
-        }).catch((err) => {
-            this.logger.error(err)
-            let result: IApiResponse = {
-                success: false,
-                message: 'Internal error'
-            }
-            res.status(500).send(result)
-        })
-
-
     }
 
     private createJWT(user: IUserModel) {

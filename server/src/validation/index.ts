@@ -1,6 +1,8 @@
 import * as express from 'express'
 import { Validator } from 'jsonschema'
 
+export * from './team'
+
 
 export function validate(jsonSchema: any) {
     return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {

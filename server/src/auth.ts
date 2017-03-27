@@ -1,5 +1,6 @@
 import * as express from 'express'
 import * as jwt from 'jsonwebtoken'
+import { Membership } from './models'
 
 
 export let authenticationMiddleware = (jwtSecret: string) => {
@@ -16,4 +17,15 @@ export let authenticationMiddleware = (jwtSecret: string) => {
             error: 'please provide a valid token'
         })
     }
+}
+
+export let getRoleOfUserForTeam = (userId: string, teamId: string) => {
+    return new Promise((resolve, reject) => {
+        Membership.findOne({ user: userId, team: teamId })
+            .then(membership => {
+                resolve(membership.role)
+            }).catch(error => {
+                reject(error)
+            })
+    })
 }

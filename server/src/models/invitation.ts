@@ -11,7 +11,7 @@ export interface IInvitation {
 export interface IInvitationModel extends IInvitation, mongoose.Document { }
 
 let invitationSchema = new mongoose.Schema({
-    team: mongoose.SchemaTypes.ObjectId,
+    team: { type: mongoose.SchemaTypes.ObjectId, ref: 'Team' },
     token: String,
     validUntil: Date
 })

@@ -1,6 +1,7 @@
 import * as express from 'express'
-import { IUser } from '../models/user'
+import { UserJWT } from "./user-jwt";
+
 
 export interface Request extends express.Request {
-    authenticatedUser?: IUser
+    authenticatedUser?: UserJWT
 }
