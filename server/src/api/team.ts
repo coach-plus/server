@@ -7,7 +7,7 @@ import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware, getRoleOfUserForTeam } from '../auth'
 import { sendError, sendSuccess } from '../api'
-import * as bcrypt from 'bcrypt'
+import * as Uuid from 'uuid/v4'
 
 
 @injectable()
@@ -31,6 +31,15 @@ export class TeamApi {
         return router
     }
 
+    reduceUser(user: IUserModel) {
+        let u = <IUser>user.toObject()
+        delete u.email
+        delete u.emailVerified
+        delete u.password
+        delete u.registered
+        return u
+    }
+
     getTeamMembers(req: Request, res: Response) {
         let teamId = req.params['teamId']
         Membership.findOne({ user: req.authenticatedUser.id, team: teamId })
@@ -40,7 +49,11 @@ export class TeamApi {
                     return
                 }
                 return Membership.find({ team: teamId }).populate('user').exec()
-                    .then(memberships => memberships.map(membership => ({role: membership.role, userid: (<any>membership.user)._id, firstname: (<any>membership.user).firstname, lastname: (<any>membership.user).lastname, })))
+                    .then(memberships => memberships.map(membership => (
+                        {
+                            role: membership.role,
+                            user: this.reduceUser(<IUserModel>membership.user)
+                        })))
                     .then(members => sendSuccess(res, 200, { members: members }))
             }).catch(error => {
                 sendError(res, 500, 'internal server error')
@@ -108,7 +121,7 @@ export class TeamApi {
                     }
                     let today = new Date()
                     let validUntil = new Date()
-                    let token = bcrypt.genSaltSync()
+                    let token = Uuid()
                     validUntil.setDate(today.getDate() + validationPeriodInDays)
                     let invitation: IInvitation = { team: teamId, token: token, validUntil: validUntil }
                     return Invitation.create(invitation).then((model: IInvitationModel) => {
