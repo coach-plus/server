@@ -11,6 +11,7 @@ import { Mailer } from './mailer'
 import { PushServer } from './pushserver'
 import { EmailVerification } from './emailverification'
 import { TeamApi } from "./api/team";
+import { MembershipApi } from "./api/membership";
 
 // use ES6 Promise for mongoose
 (<any>mongoose).Promise = global.Promise
@@ -24,6 +25,7 @@ container.bind<Server>(Server).toSelf().inSingletonScope()
 container.bind<Api>(Api).toSelf().inSingletonScope()
 container.bind<UserApi>(UserApi).toSelf().inSingletonScope()
 container.bind<TeamApi>(TeamApi).toSelf().inSingletonScope()
+container.bind<MembershipApi>(MembershipApi).toSelf().inSingletonScope()
 
 container.bind<Sites>(Sites).toSelf().inSingletonScope()
 

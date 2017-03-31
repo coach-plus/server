@@ -4,20 +4,23 @@ import { inject, injectable } from 'inversify'
 import * as User from './models'
 import { UserApi } from './api/user'
 import { TeamApi } from './api/team'
+import { MembershipApi } from './api/membership'
 import { Request, Response } from './interfaces'
 
 
 @injectable()
 export class Api {
 
-    constructor( @inject(Logger) private logger: Logger, @inject(UserApi) private userApi: UserApi, 
-    @inject(TeamApi) private teamApi: TeamApi) { }
+    constructor( @inject(Logger) private logger: Logger, @inject(UserApi) private userApi: UserApi,
+        @inject(TeamApi) private teamApi: TeamApi,
+        @inject(MembershipApi) private membershipApi: MembershipApi) { }
 
     getRouter() {
         let router = express.Router()
         router.get('/', this.helloWorld.bind(this))
         router.use('/users', this.userApi.getRouter())
         router.use('/teams', this.teamApi.getRouter())
+        router.use('/memberships', this.membershipApi.getRouter())
         return router
     }
 
