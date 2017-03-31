@@ -1,7 +1,7 @@
 import * as express from 'express'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Team, ITeam, ITeamModel, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel } from '../models'
+import { User, Team, ITeam, ITeamModel, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser } from '../models'
 import { validate, registerUserSchema, loginUserSchema, registerTeamSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
@@ -31,15 +31,6 @@ export class TeamApi {
         return router
     }
 
-    reduceUser(user: IUserModel) {
-        let u = <IUser>user.toObject()
-        delete u.email
-        delete u.emailVerified
-        delete u.password
-        delete u.registered
-        return u
-    }
-
     getTeamMembers(req: Request, res: Response) {
         let teamId = req.params['teamId']
         Membership.findOne({ user: req.authenticatedUser.id, team: teamId })
@@ -52,7 +43,7 @@ export class TeamApi {
                     .then(memberships => memberships.map(membership => (
                         {
                             role: membership.role,
-                            user: this.reduceUser(<IUserModel>membership.user)
+                            user: reduceUser(<IUserModel>membership.user)
                         })))
                     .then(members => sendSuccess(res, 200, { members: members }))
             }).catch(error => {
