@@ -4,9 +4,30 @@ export let registerTeamSchema = {
             type: 'string',
             required: true
         },
-         isPublic: {
+        isPublic: {
             type: 'boolean',
             required: true
+        }
+    }
+}
+
+export let eventSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            required: true
+        },
+        start: {
+            type: 'string',
+            required: true
+        },
+        end: {
+            type: 'string',
+            required: true
+        },
+        description: {
+            type: 'string',
+            required: false
         }
     }
 }

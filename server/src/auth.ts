@@ -1,6 +1,9 @@
 import * as express from 'express'
 import * as jwt from 'jsonwebtoken'
 import { Membership } from './models'
+import { Request, Response, IApiResponse } from './interfaces'
+import { sendError, sendSuccess } from './api'
+
 
 
 export let authenticationMiddleware = (jwtSecret: string) => {
@@ -28,4 +31,33 @@ export let getRoleOfUserForTeam = (userId: string, teamId: string) => {
                 reject(error)
             })
     })
+}
+
+export let authenticatedUserIsMemberOfTeam = (req: Request, res: Response, next: Function) => {
+    let teamId = req.params['teamId']
+    Membership.findOne({ user: req.authenticatedUser.id, team: teamId })
+        .then(userModel => {
+            if (userModel == null) {
+                sendError(res, 401, 'user is not a member of the team')
+                return
+            }
+            next()
+        }).catch(error => {
+            sendError(res, 500, 'internal server error')
+        })
+}
+
+export let authenticatedUserIsCoach = (req: Request, res: Response, next: Function) => {
+    let teamId = req.params['teamId']
+
+    Membership.findOne({ user: req.authenticatedUser.id, team: teamId })
+        .then(membership => {
+            if (membership.role == 'coach') {
+                next()
+                return
+            }
+            sendError(res, 401, 'user is not authorized')
+        }).catch(error => {
+            sendError(res, 500, 'internal server error')
+        })
 }

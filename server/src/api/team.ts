@@ -1,13 +1,16 @@
 import * as express from 'express'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Team, ITeam, ITeamModel, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser } from '../models'
-import { validate, registerUserSchema, loginUserSchema, registerTeamSchema } from '../validation'
+import { User, Team, ITeam, ITeamModel, IEventModel, Event, IEvent, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser } from '../models'
+import { validate, registerUserSchema, loginUserSchema, registerTeamSchema, eventSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
-import { authenticationMiddleware, getRoleOfUserForTeam } from '../auth'
+import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsMemberOfTeam, authenticatedUserIsCoach } from '../auth'
 import { sendError, sendSuccess } from '../api'
 import * as Uuid from 'uuid/v4'
+
+
+
 
 
 @injectable()
@@ -20,15 +23,91 @@ export class TeamApi {
         let router = express.Router()
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/my', this.getMyTeams.bind(this))
-        router.get('/:teamId/members', this.getTeamMembers.bind(this))
         router.post('/register', this.register.bind(this))
-        router.post('/:teamId/invite', this.invite.bind(this))
         router.post('/private/join/:token', this.joinPrivateTeam.bind(this))
         router.post('/public/join/:teamId', this.joinPublicTeam.bind(this))
         router.put('/:teamId/coaches/:userId', this.promoteUser.bind(this))
+        router.get('/:teamId/members', this.getTeamMembers.bind(this))
+        router.post('/:teamId/invite', this.invite.bind(this))
+
         // todo leave team
         // todo delete team ?
+
+        let eventRouter = express.Router({ mergeParams: true })
+        eventRouter.use(authenticatedUserIsMemberOfTeam)
+        eventRouter.get('/', this.getEvents.bind(this))
+        eventRouter.post('/', authenticatedUserIsCoach, this.createEvent.bind(this))
+        eventRouter.get('/:eventId', this.getEvent.bind(this))
+        eventRouter.put('/:eventId', authenticatedUserIsCoach, this.updateEvent.bind(this))
+        eventRouter.delete('/:eventId', authenticatedUserIsCoach, this.deleteEvent.bind(this))
+        router.use('/:teamId/events', eventRouter)
         return router
+    }
+
+    getEvents(req: Request, res: Response) {
+        let teamId = req.params['teamId']
+        Event.find({ team: teamId }).then(events => {
+            sendSuccess(res, 200, { events: events })
+        }).catch(error => {
+            this.logger.error(error)
+            sendError(res, 500, 'internal server error')
+        })
+    }
+
+    @validate(eventSchema)
+    createEvent(req: Request, res: Response) {
+        let teamId = req.params['teamId']
+        let model = <IEvent>req.body
+        model.team = teamId
+        Event.create(model).then(createdEvent => {
+            sendSuccess(res, 201, { event: createdEvent })
+        }).catch(error => {
+            this.logger.error(error)
+            sendError(res, 500, 'internal server error')
+        })
+    }
+
+    deleteEvent(req: Request, res: Response) {
+        let eventId = req.params['eventId']
+        let teamId = req.params['teamId']
+        Event.findOneAndRemove({ _id: eventId, team: teamId }).then(() => {
+            sendSuccess(res, 200, {})
+        }).catch(error => {
+            this.logger.error(error)
+            sendError(res, 500, error)
+        })
+    }
+
+    updateEvent(req: Request, res: Response) {
+        let eventId = req.params['eventId']
+        let teamId = req.params['teamId']
+        let model = <IEvent>req.body
+        Event.findOneAndUpdate({ _id: eventId, team: teamId }, model, { new: true })
+            .then(updatedEvent => {
+                if (updatedEvent == null) {
+                    sendError(res, 404, 'not found')
+                    return
+                }
+                sendSuccess(res, 200, { event: updatedEvent })
+            }).catch(error => {
+                this.logger.error(error)
+                sendError(res, 500, 'internal server error')
+            })
+    }
+
+    getEvent(req: Request, res: Response) {
+        let teamId = req.params['teamId']
+        let eventId = req.params['eventId']
+        Event.findOne({ _id: eventId, team: teamId }).then(event => {
+            if (event == null) {
+                sendError(res, 404, 'not found')
+                return
+            }
+            sendSuccess(res, 200, { event: event })
+        }).catch(error => {
+            this.logger.error(error)
+            sendError(res, 500, 'internal server error')
+        })
     }
 
     getTeamMembers(req: Request, res: Response) {
