@@ -213,7 +213,7 @@ export class TeamApi {
                 sendError(res, 404, 'the token is not valid')
                 return
             }
-            if (invitationModel.validUntil.getTime() > Date.now()) {
+            if (invitationModel.validUntil.getTime() < Date.now()) {
                 sendError(res, 400, 'the token is no longer valid')
                 return
             }
