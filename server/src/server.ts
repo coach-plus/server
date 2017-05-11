@@ -21,7 +21,7 @@ export class Server {
     public start() {
         let app = express();
         let server = http.createServer(app);
-        app.use(bodyParser.json({ limit: '10mb' }));
+        app.use(bodyParser.json({ limit: '100mb' }));
 
         let hbs = exphbs.create({
             extname: '.hbs',
