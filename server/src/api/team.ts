@@ -8,6 +8,7 @@ import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsMemberOfTeam, authenticatedUserIsCoach } from '../auth'
 import { sendError, sendSuccess } from '../api'
 import * as Uuid from 'uuid/v4'
+import { ImageManager } from "../imagemanager";
 
 
 
@@ -16,7 +17,7 @@ import * as Uuid from 'uuid/v4'
 @injectable()
 export class TeamApi {
 
-    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config) {
+    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, @inject(ImageManager) private imageManager: ImageManager) {
     }
 
     getRouter() {
@@ -151,17 +152,21 @@ export class TeamApi {
                 sendError(res, 400, 'team does already exist')
                 return
             }
-            Team.create({ name: payload.name, isPublic: payload.isPublic })
-                .then(team => {
-                    createdTeam = team
-                    let membership: IMembership = { role: 'coach', team: team._id, user: req.authenticatedUser.id }
-                    return Membership.create(membership)
-                })
-                .then(() => sendSuccess(res, 201, createdTeam))
-                .catch(error => {
-                    this.logger.error(error)
-                    sendError(res, 500, 'internal server error')
-                })
+
+            this.imageManager.storeImageAsFile(payload.image).then((imageName) => {
+                Team.create({ name: payload.name, isPublic: payload.isPublic, image: imageName })
+                    .then(team => {
+                        createdTeam = team
+                        let membership: IMembership = { role: 'coach', team: team._id, user: req.authenticatedUser.id }
+                        return Membership.create(membership)
+                    })
+                    .then(() => sendSuccess(res, 201, createdTeam))
+            }).catch(error => {
+                this.logger.error(error)
+                sendError(res, 500, 'internal server error')
+            })
+
+
         })
     }
 

@@ -7,7 +7,11 @@ export let registerTeamSchema = {
         isPublic: {
             type: 'boolean',
             required: true
-        }
+        },
+        image: {
+            type: 'string',
+            required: false
+        },
     }
 }
 

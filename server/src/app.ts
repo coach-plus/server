@@ -12,6 +12,7 @@ import { PushServer } from './pushserver'
 import { EmailVerification } from './emailverification'
 import { TeamApi } from "./api/team";
 import { MembershipApi } from "./api/membership";
+import { ImageManager } from "./imagemanager";
 
 // use ES6 Promise for mongoose
 (<any>mongoose).Promise = global.Promise
@@ -31,6 +32,7 @@ container.bind<Sites>(Sites).toSelf().inSingletonScope()
 
 container.bind<PushServer>(PushServer).toSelf().inSingletonScope()
 container.bind<Mailer>(Mailer).toSelf().inSingletonScope()
+container.bind<ImageManager>(ImageManager).toSelf().inSingletonScope()
 
 container.bind<EmailVerification>(EmailVerification).toSelf().inSingletonScope()
 

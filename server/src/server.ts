@@ -40,6 +40,7 @@ export class Server {
         app.use('/static', express.static(__dirname + '/../../client/static'));
         app.use('/api', this.api.getRouter());
         app.use('/static', express.static(__dirname + '/../static'))
+        app.use('/uploads', express.static(__dirname + '/../../uploads'))
         app.get('/apple-app-site-association', (req, res) => {
             fs.readFile(__dirname + '/../assets/apple-app-site-association', (err, data) => {
                 res.contentType('application/json')
