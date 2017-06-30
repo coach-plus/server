@@ -3,12 +3,13 @@ import * as bcrypt from 'bcrypt'
 import * as jwt from 'jsonwebtoken'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Verification, IUserModel, IUser, IVerificationModel } from '../models'
+import { User, Verification, IUserModel, IUser, IVerificationModel, reduceUser } from '../models'
 import { validate, registerUserSchema, loginUserSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware } from '../auth'
 import { EmailVerification } from '../emailverification'
+import { sendSuccess, sendError } from "../api";
 
 
 @injectable()
@@ -24,8 +25,12 @@ export class UserApi {
         router.post('/login', this.login.bind(this))
         router.post('/verification/:token', this.verifyEmail.bind(this))
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
-        router.get('/secret', (req, res) => res.send('secret'))
+        router.get('/me', this.getMyUser.bind(this))
         return router
+    }
+
+    getMyUser(req: Request, res: Response) {
+        sendSuccess(res, 200, { user: req.authenticatedUser })
     }
 
     @validate(registerUserSchema)
