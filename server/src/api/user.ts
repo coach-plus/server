@@ -86,7 +86,7 @@ export class UserApi {
                 success: true,
                 content: {
                     token: token,
-                    firstame: user.firstname,
+                    firstname: user.firstname,
                     lastname: user.lastname
                 }
             }
