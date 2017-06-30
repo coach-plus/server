@@ -36,3 +36,16 @@ export let eventSchema = {
     }
 }
 
+export let newsSchema = {
+    properties: {
+        title: {
+            type: 'string',
+            required: false
+        },
+        text: {
+            type: 'string',
+            required: true
+        }
+    }
+}
+

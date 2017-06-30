@@ -1,8 +1,8 @@
 import * as express from 'express'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Team, ITeam, ITeamModel, IEventModel, Event, IEvent, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser, Participation, IParticipationModel } from '../models'
-import { validate, registerUserSchema, loginUserSchema, registerTeamSchema, eventSchema } from '../validation'
+import { User, Team, ITeam, ITeamModel, IEventModel, Event, IEvent, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser, Participation, IParticipationModel, News, INewsModel, INews } from '../models'
+import { validate, registerUserSchema, loginUserSchema, registerTeamSchema, eventSchema, newsSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsMemberOfTeam, authenticatedUserIsCoach, isUserCoachOfTeam, authenticatedUserIsUser } from '../auth'
@@ -42,6 +42,13 @@ export class TeamApi {
         eventRouter.put('/:eventId/participation/:userId/didAttend', authenticatedUserIsCoach, this.setUserDidAttend.bind(this))
         eventRouter.put('/:eventId/participation/:userId/willAttend', authenticatedUserIsUser('userId'), this.setUserWillAttend.bind(this))
         router.use('/:teamId/events', eventRouter)
+
+        let newsRouter = express.Router({ mergeParams: true })
+        newsRouter.get('/', this.getNews.bind(this))
+        newsRouter.delete('/:newsId', authenticatedUserIsCoach, this.deleteNews.bind(this))
+        newsRouter.post('/', authenticatedUserIsCoach, this.createNews.bind(this))
+        router.use('/:teamId/events/:eventId/news', newsRouter);
+
         return router
     }
 
@@ -349,13 +356,53 @@ export class TeamApi {
                 participationMap.set('' + <string>participation.user, participation)
             })
             memberships.forEach(membership => {
-                let participation = participationMap.get((<IUserModel>membership.user).id) || null
+                let participation = participationMap.get((<IUserModel>membership.user)._id) || null
                 participationList.push({
                     user: <IUserModel>membership.user,
                     participation: participation
                 })
             })
             sendSuccess(res, 200, { participation: participationList })
+        })
+    }
+
+
+    //
+    // News
+    //
+
+    getNews(req: Request, res: Response) {
+        let eventId = req.params['eventId']
+        News.find({ event: eventId }).sort('-created').exec().then(news => {
+            sendSuccess(res, 200, { news: news })
+        }).catch(error => {
+            this.logger.error(error)
+            sendError(res, 500, 'internal server error')
+        })
+    }
+
+    deleteNews(req: Request, res: Response) {
+        let newsId = req.params['newsId']
+        News.findOneAndRemove({ _id: newsId }).then(() => {
+            sendSuccess(res, 200, {})
+        }).catch(error => {
+            this.logger.error(error)
+            sendError(res, 500, error)
+        })
+    }
+
+    @validate(newsSchema)
+    createNews(req: Request, res: Response) {
+        let eventId = req.params['eventId']
+        let userId = req.authenticatedUser.id
+        let model = <INews>req.body
+        model.event = eventId
+        model.author = userId
+        News.create(model).then(createdNews => {
+            sendSuccess(res, 201, { news: createdNews })
+        }).catch(error => {
+            this.logger.error(error)
+            sendError(res, 500, 'internal server error')
         })
     }
 }
