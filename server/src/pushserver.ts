@@ -3,7 +3,7 @@ import { Logger } from './logger'
 import { inject, injectable } from 'inversify'
 import * as User from './models'
 import { IMailRequest } from './interfaces'
-import { Config } from "./config"
+import { Config } from './config'
 import Axios from 'axios'
 
 @injectable()

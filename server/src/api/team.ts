@@ -1,17 +1,14 @@
 import * as express from 'express'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Team, ITeam, ITeamModel, IEventModel, Event, IEvent, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser } from '../models'
+import { User, Team, ITeam, ITeamModel, IEventModel, Event, IEvent, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser, Participation, IParticipationModel } from '../models'
 import { validate, registerUserSchema, loginUserSchema, registerTeamSchema, eventSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
-import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsMemberOfTeam, authenticatedUserIsCoach } from '../auth'
+import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsMemberOfTeam, authenticatedUserIsCoach, isUserCoachOfTeam, authenticatedUserIsUser } from '../auth'
 import { sendError, sendSuccess } from '../api'
 import * as Uuid from 'uuid/v4'
 import { ImageManager } from "../imagemanager";
-
-
-
 
 
 @injectable()
@@ -41,6 +38,9 @@ export class TeamApi {
         eventRouter.get('/:eventId', this.getEvent.bind(this))
         eventRouter.put('/:eventId', authenticatedUserIsCoach, this.updateEvent.bind(this))
         eventRouter.delete('/:eventId', authenticatedUserIsCoach, this.deleteEvent.bind(this))
+        eventRouter.get('/:eventId/participation', this.getParticipations.bind(this))
+        eventRouter.put('/:eventId/participation/:userId/didAttend', authenticatedUserIsCoach, this.setUserDidAttend.bind(this))
+        eventRouter.put('/:eventId/participation/:userId/willAttend', authenticatedUserIsUser('userId'), this.setUserWillAttend.bind(this))
         router.use('/:teamId/events', eventRouter)
         return router
     }
@@ -282,5 +282,80 @@ export class TeamApi {
                 sendError(res, 500, 'internal server error')
                 this.logger.error(error)
             })
+    }
+
+    // TODO validate body
+    setUserWillAttend(req: Request, res: Response) {
+        let userId = req.params.userId
+        let eventId = req.params.eventId
+        let willAttend = req.body.willAttend
+        Event.findOne({ _id: eventId }).then(event => {
+            if (event == null) {
+                sendError(res, 404, 'event not found')
+                return
+            }
+            if (event.start.getTime() < new Date().getTime()) {
+                sendError(res, 400, 'event has already started')
+                return
+            }
+            return Participation.findOneAndUpdate({ event: eventId, user: userId }, { $set: { willAttend: willAttend, didAttend: willAttend } }, { upsert: true, new: true })
+                .then(result => {
+                    sendSuccess(res, 200, result)
+                })
+        }).catch(error => {
+            sendError(res, 500, 'internal server error')
+            this.logger.error(error)
+        })
+    }
+
+    setUserDidAttend(req: Request, res: Response) {
+        let userId = req.params.userId
+        let eventId = req.params.eventId
+        let didAttend = req.body.didAttend
+
+        Event.findOne({ _id: eventId }).then(event => {
+            if (event == null) {
+                sendError(res, 404, 'event not found')
+                return
+            }
+            if (event.start.getTime() > new Date().getTime()) {
+                sendError(res, 400, 'event hasn\'t started yet')
+                return
+            }
+            return Participation.findOneAndUpdate({ event: eventId, user: userId }, { $set: { didAttend: didAttend } }, { upsert: true, new: true })
+                .then(result => {
+                    sendSuccess(res, 200, result)
+                })
+        }).catch(error => {
+            sendError(res, 500, 'internal server error')
+            this.logger.error(error)
+        })
+    }
+
+    getParticipations(req: Request, res: Response) {
+        let teamId = req.params.teamId
+        let userId = req.params.userId
+        let eventId = req.params.eventId
+        let participationList: { user: IUserModel, participation: IParticipationModel }[] = []
+
+        Promise.all([
+            Membership.find({ team: teamId }).populate('user'),
+            Participation.find({ event: eventId })
+        ]).then(result => {
+            let memberships = result[0]
+            let participation = result[1]
+            let participationMap = new Map<string, IParticipationModel>()
+            participation.forEach(participation => {
+                participationMap.set('' + <string>participation.user, participation)
+            })
+            memberships.forEach(membership => {
+                let participation = participationMap.get((<IUserModel>membership.user).id) || null
+                participationList.push({
+                    user: <IUserModel>membership.user,
+                    participation: participation
+                })
+            })
+            sendSuccess(res, 200, { participation: participationList })
+        })
     }
 }

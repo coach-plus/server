@@ -49,15 +49,39 @@ export let authenticatedUserIsMemberOfTeam = (req: Request, res: Response, next:
 
 export let authenticatedUserIsCoach = (req: Request, res: Response, next: Function) => {
     let teamId = req.params['teamId']
+    isUserCoachOfTeam(req.authenticatedUser.id, teamId).then(isUserCoach => {
+        if (isUserCoach) {
+            next()
+            return
+        }
+        sendError(res, 401, 'user is not authorized')
+    }).catch(error => {
+        sendError(res, 500, 'internal server error')
+    })
+}
 
-    Membership.findOne({ user: req.authenticatedUser.id, team: teamId })
-        .then(membership => {
-            if (membership.role == 'coach') {
-                next()
-                return
-            }
-            sendError(res, 401, 'user is not authorized')
-        }).catch(error => {
-            sendError(res, 500, 'internal server error')
-        })
+export let authenticatedUserIsUser = (userIdParameter: string) => {
+    return (req: Request, res: Response, next: Function) => {
+        let userId = req.params[userIdParameter]
+        if (userId == req.authenticatedUser.id) {
+            next()
+            return
+        }
+        sendError(res, 401, 'user is not authorized')
+    }
+}
+
+export let isUserCoachOfTeam = (userId: string, teamId: string) => {
+    return new Promise((resolve, reject) => {
+        Membership.findOne({ user: userId, team: teamId })
+            .then(membership => {
+                if (membership.role == 'coach') {
+                    resolve(true)
+                    return
+                }
+                resolve(false)
+            }).catch(error => {
+                reject(error)
+            })
+    })
 }
