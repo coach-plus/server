@@ -356,7 +356,8 @@ export class TeamApi {
                 participationMap.set('' + <string>participation.user, participation)
             })
             memberships.forEach(membership => {
-                let participation = participationMap.get((<IUserModel>membership.user)._id) || null
+                let key = '' + (<IUserModel>membership.user)._id
+                let participation = participationMap.get(key) || null
                 participationList.push({
                     user: <IUserModel>membership.user,
                     participation: participation
