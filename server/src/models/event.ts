@@ -7,6 +7,11 @@ export interface IEvent {
     description: string
     start: Date
     end: Date
+    location: {
+        name: string
+        lat: number
+        long: number
+    }
 }
 
 export interface IEventModel extends IEvent, mongoose.Document { }
@@ -16,7 +21,12 @@ let eventSchema = new mongoose.Schema({
     name: String,
     description: { type: String, default: '' },
     start: Date,
-    end: Date
+    end: Date,
+    location: {
+        name: String,
+        lat: Number,
+        long: Number
+    }
 });
 
 export let Event = mongoose.model<IEventModel>('Event', eventSchema)

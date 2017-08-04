@@ -29,6 +29,24 @@ export let eventSchema = {
             type: 'string',
             required: true
         },
+        location: {
+            type: 'object',
+            required: true,
+            properties: {
+                name: {
+                    type: 'string',
+                    required: true
+                },
+                latitude: {
+                    type: 'number',
+                    required: false
+                },
+                longitude: {
+                    type: 'number',
+                    required: false
+                }
+            }
+        },
         description: {
             type: 'string',
             required: false
