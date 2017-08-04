@@ -1,7 +1,7 @@
 import * as express from 'express'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Team, ITeam, ITeamModel, IEventModel, Event, IEvent, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser, Participation, IParticipationModel, News, INewsModel, INews } from '../models'
+import { User, Team, ITeam, ITeamModel, IEventModel, Event, IEvent, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser, Participation, IParticipationModel, News, INewsModel, INews, reducedUserPopulationFields } from '../models'
 import { validate, registerUserSchema, loginUserSchema, registerTeamSchema, eventSchema, newsSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
@@ -346,7 +346,7 @@ export class TeamApi {
         let participationList: { user: IUserModel, participation: IParticipationModel }[] = []
 
         Promise.all([
-            Membership.find({ team: teamId }).populate('user'),
+            Membership.find({ team: teamId }).populate('user', reducedUserPopulationFields),
             Participation.find({ event: eventId })
         ]).then(result => {
             let memberships = result[0]
@@ -374,7 +374,7 @@ export class TeamApi {
 
     getNews(req: Request, res: Response) {
         let eventId = req.params['eventId']
-        News.find({ event: eventId }).sort('-created').populate('author').exec().then(news => {
+        News.find({ event: eventId }).sort('-created').populate('author', reducedUserPopulationFields).exec().then(news => {
             sendSuccess(res, 200, { news: news })
         }).catch(error => {
             this.logger.error(error)

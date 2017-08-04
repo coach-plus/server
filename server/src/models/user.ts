@@ -31,3 +31,5 @@ export let reduceUser = (user: IUserModel): IUser => {
     delete u.registered
     return u
 }
+
+export let reducedUserPopulationFields = '_id firstname lastname image'
