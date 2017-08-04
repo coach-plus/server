@@ -27,6 +27,7 @@ export class TeamApi {
         router.put('/:teamId/coaches/:userId', this.promoteUser.bind(this))
         router.get('/:teamId/members', this.getTeamMembers.bind(this))
         router.post('/:teamId/invite', this.invite.bind(this))
+        router.put('/:teamId', this.editTeam.bind(this))
 
         // todo leave team
         // todo delete team ?
@@ -174,6 +175,37 @@ export class TeamApi {
             })
 
 
+        })
+    }
+
+    editTeam(req: Request, res: Response) {
+
+        let teamId = req.params['teamId']
+        let payload = req.body
+        let updateImage = (payload.image != null)
+
+        let tasks = []
+
+        if (updateImage) {
+            tasks.push(new Promise((resolve, reject) => {
+                this.imageManager.storeImageAsFile(payload.image).then((imageName) => {
+                    return Team.findByIdAndUpdate(teamId, { $set: {image: imageName}}).then(() => {
+                        resolve();
+                    })
+                }).catch(err => {
+                    reject(err);
+                })
+            }))
+        }
+
+        //TODO: Add other fields
+
+        Promise.all(tasks).then(results => {
+            Team.findById(teamId).then(team => {
+                sendSuccess(res, 200, team)
+            })
+        }).catch(errs => {
+            sendError(res, 500, 'Errors occured')
         })
     }
 
