@@ -374,7 +374,7 @@ export class TeamApi {
 
     getNews(req: Request, res: Response) {
         let eventId = req.params['eventId']
-        News.find({ event: eventId }).sort('-created').exec().then(news => {
+        News.find({ event: eventId }).sort('-created').populate('author').exec().then(news => {
             sendSuccess(res, 200, { news: news })
         }).catch(error => {
             this.logger.error(error)
