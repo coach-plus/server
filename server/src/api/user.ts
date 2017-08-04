@@ -173,7 +173,7 @@ export class UserApi {
 
         Promise.all(tasks).then(results => {
             User.findById(req.authenticatedUser.id).then(user => {
-                sendSuccess(res, 200, reduceUser(user))
+                sendSuccess(res, 200, reduceUser(user, true))
             })
         }).catch(errs => {
             sendError(res, 500, 'Errors occured')

@@ -25,9 +25,11 @@ let userSchema = new mongoose.Schema({
 
 export let User = mongoose.model<IUserModel>('User', userSchema)
 
-export let reduceUser = (user: IUserModel): IUser => {
+export let reduceUser = (user: IUserModel, keepEmail?:Boolean): IUser => {
     let u = <IUser>user.toObject()
-    delete u.email
+    if (!keepEmail) {
+        delete u.email
+    }
     delete u.emailVerified
     delete u.password
     delete u.registered
