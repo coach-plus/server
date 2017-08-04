@@ -186,7 +186,8 @@ export class UserApi {
             id: user._id,
             email: user.email,
             firstname: user.firstname,
-            lastname: user.lastname
+            lastname: user.lastname,
+            image: user.image
         }
         let token: any = null
         try {
