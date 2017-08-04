@@ -10,13 +10,14 @@ import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware } from '../auth'
 import { EmailVerification } from '../emailverification'
 import { sendSuccess, sendError } from "../api";
-
+import { ImageManager } from "../imagemanager";
 
 @injectable()
 export class UserApi {
 
     constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config,
-        @inject(EmailVerification) private emailverification: EmailVerification) {
+        @inject(EmailVerification) private emailverification: EmailVerification,
+        @inject(ImageManager) private imageManager: ImageManager) {
     }
 
     getRouter() {
@@ -26,6 +27,7 @@ export class UserApi {
         router.post('/verification/:token', this.verifyEmail.bind(this))
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/me', this.getMyUser.bind(this))
+        router.put('/me',this.editUser.bind(this))
         return router
     }
 
@@ -147,6 +149,37 @@ export class UserApi {
                 res.status(500).send(result)
             })
     }
+
+    editUser(req: Request, res: Response) {
+
+        let payload = req.body
+        let updateImage = (payload.image != null)
+
+        let tasks = []
+
+        if (updateImage) {
+            tasks.push(new Promise((resolve, reject) => {
+                this.imageManager.storeImageAsFile(payload.image).then((imageName) => {
+                    return User.findByIdAndUpdate(req.authenticatedUser.id, { $set: {image: imageName}}).then(() => {
+                        resolve();
+                    })
+                }).catch(err => {
+                    reject(err);
+                })
+            }))
+        }
+
+        //TODO: Add other fields
+
+        Promise.all(tasks).then(results => {
+            User.findById(req.authenticatedUser.id).then(user => {
+                sendSuccess(res, 200, reduceUser(user))
+            })
+        }).catch(errs => {
+            sendError(res, 500, 'Errors occured')
+        })
+    }
+
 
     private createJWT(user: IUserModel) {
         let tokenBody = {

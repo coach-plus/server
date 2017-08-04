@@ -8,6 +8,7 @@ export interface IUser {
     password?: string
     emailVerified?: boolean
     registered?: Date
+    image: string
 }
 
 export interface IUserModel extends IUser, mongoose.Document { }
@@ -18,7 +19,8 @@ let userSchema = new mongoose.Schema({
     email: { unique: true, type: String },
     password: String,
     emailVerified: { type: Boolean, default: false },
-    registered: { type: Date, default: Date.now }
+    registered: { type: Date, default: Date.now },
+    image: String
 })
 
 export let User = mongoose.model<IUserModel>('User', userSchema)
