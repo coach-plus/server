@@ -337,7 +337,7 @@ export class TeamApi {
                 sendError(res, 400, 'event has already started')
                 return
             }
-            return Participation.findOneAndUpdate({ event: eventId, user: userId }, { $set: { willAttend: willAttend, didAttend: willAttend } }, { upsert: true, new: true })
+            return Participation.findOneAndUpdate({ event: eventId, user: userId }, { $set: { willAttend: willAttend} }, { upsert: true, new: true })
                 .then(result => {
                     sendSuccess(res, 200, result)
                 })
