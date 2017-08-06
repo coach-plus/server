@@ -1,7 +1,7 @@
 import { IUserModel } from './models/user';
 import { Logger } from './logger'
 import { inject, injectable } from 'inversify'
-import { IVerification, IUser, IEvent, IDevice, Device, Membership } from './models'
+import { IVerification, IUser, IEventModel, IDevice, Device, Membership } from './models'
 import { IPushRequest } from './interfaces'
 import { PushServer } from "./pushserver";
 import { Config } from './config'
@@ -12,7 +12,7 @@ export class Notifications {
 
     constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, @inject(PushServer) private pushserver: PushServer) { }
 
-    sendReminder(event: IEvent, sendingUserId:string) {
+    sendReminder(event: IEventModel, sendingUserId:string) {
         Membership.find({team:event.team}).populate({
             path:'user',
             populate: {
@@ -35,7 +35,7 @@ export class Notifications {
                 content: event.description,
                 devices: devices,
                 payload: {
-                    eventId: event,
+                    eventId: event._id,
                     teamId: event.team
                 },
                 subtitle: event.start.toDateString(), //TODO: readable date format
