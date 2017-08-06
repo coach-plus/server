@@ -35,7 +35,8 @@ export class Notifications {
                 content: event.description,
                 devices: devices,
                 payload: {
-                    eventId: event
+                    eventId: event,
+                    teamId: event.team
                 },
                 subtitle: event.start.toDateString(), //TODO: readable date format
                 title: event.name
