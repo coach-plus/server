@@ -1,4 +1,5 @@
-import * as mongoose from 'mongoose';
+import * as mongoose from 'mongoose'
+import { IDevice } from './index'
 
 
 export interface IUser {
@@ -9,6 +10,7 @@ export interface IUser {
     emailVerified?: boolean
     registered?: Date
     image: string
+    devices: IDevice[]
 }
 
 export interface IUserModel extends IUser, mongoose.Document { }
@@ -20,7 +22,8 @@ let userSchema = new mongoose.Schema({
     password: String,
     emailVerified: { type: Boolean, default: false },
     registered: { type: Date, default: Date.now },
-    image: String
+    image: String,
+    devices : [{ type: mongoose.Schema.Types.ObjectId, ref: 'Device' }]
 })
 
 export let User = mongoose.model<IUserModel>('User', userSchema)
@@ -33,7 +36,8 @@ export let reduceUser = (user: IUserModel, keepEmail?:Boolean): IUser => {
     delete u.emailVerified
     delete u.password
     delete u.registered
+    delete u.devices
     return u
 }
 
-export let reducedUserPopulationFields = '_id firstname lastname image'
+export let reducedUserPopulationFields = '_id firstname lastname image devices'

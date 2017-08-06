@@ -13,6 +13,7 @@ import { EmailVerification } from './emailverification'
 import { TeamApi } from "./api/team";
 import { MembershipApi } from "./api/membership";
 import { ImageManager } from "./imagemanager";
+import { Notifications } from "./notifications";
 
 // use ES6 Promise for mongoose
 (<any>mongoose).Promise = global.Promise
@@ -35,6 +36,7 @@ container.bind<Mailer>(Mailer).toSelf().inSingletonScope()
 container.bind<ImageManager>(ImageManager).toSelf().inSingletonScope()
 
 container.bind<EmailVerification>(EmailVerification).toSelf().inSingletonScope()
+container.bind<Notifications>(Notifications).toSelf().inSingletonScope()
 
 let logger = container.get<Logger>(Logger)
 let config = container.get<Config>(Config)

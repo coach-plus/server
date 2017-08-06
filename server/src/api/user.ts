@@ -3,11 +3,11 @@ import * as bcrypt from 'bcrypt'
 import * as jwt from 'jsonwebtoken'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Verification, IUserModel, IUser, IVerificationModel, reduceUser } from '../models'
-import { validate, registerUserSchema, loginUserSchema } from '../validation'
+import { User, Verification, IUserModel, IUser, IVerificationModel, reduceUser, Device, IDevice} from '../models'
+import { validate, registerUserSchema, loginUserSchema, deviceSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
-import { authenticationMiddleware } from '../auth'
+import { authenticationMiddleware, authenticatedUserIsUser } from '../auth'
 import { EmailVerification } from '../emailverification'
 import { sendSuccess, sendError } from "../api";
 import { ImageManager } from "../imagemanager";
@@ -28,6 +28,7 @@ export class UserApi {
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/me', this.getMyUser.bind(this))
         router.put('/me',this.editUser.bind(this))
+        router.post('/:userId/devices', authenticatedUserIsUser('userId'), this.registerDevice.bind(this))
         return router
     }
 
@@ -177,6 +178,31 @@ export class UserApi {
             })
         }).catch(errs => {
             sendError(res, 500, 'Errors occured')
+        })
+    }
+    
+    @validate(deviceSchema)
+    registerDevice(req: Request, res: Response) {
+        let device = <IDevice>req.body;
+        Device.findOneAndUpdate({deviceId:device.deviceId}, {
+            deviceId: device.deviceId,
+            pushId: device.pushId,
+            system: device.system,
+            user: req.authenticatedUser.id
+        }, { upsert: true, new: true }).then(device => {
+
+            User.findById(req.authenticatedUser.id).then(user => {
+                if (user.devices.indexOf(device._id) != -1) {
+                    sendSuccess(res, 201, {device:device})
+                } else {
+                    user.devices.push(device._id);
+                    user.save().then(() => {
+                        sendSuccess(res, 201, {device:device})
+                    })
+                }
+            })
+        }).catch(err => {
+            sendError(res, 500, err)
         })
     }
 

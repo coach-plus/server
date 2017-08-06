@@ -60,3 +60,20 @@ export let loginUserSchema = {
         }
     }
 }
+
+export let deviceSchema = {
+    properties: {
+        system: {
+            type: 'string',
+            required: true
+        },
+        pushId: {
+            type: 'string',
+            required: true
+        },
+        deviceId: {
+            type: 'string',
+            required: true
+        }
+    }
+}

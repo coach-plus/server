@@ -8,13 +8,14 @@ import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsMemberOfTeam, authenticatedUserIsCoach, isUserCoachOfTeam, authenticatedUserIsUser } from '../auth'
 import { sendError, sendSuccess } from '../api'
 import * as Uuid from 'uuid/v4'
-import { ImageManager } from "../imagemanager";
+import { ImageManager } from "../imagemanager"
+import { Notifications } from "../notifications"
 
 
 @injectable()
 export class TeamApi {
 
-    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, @inject(ImageManager) private imageManager: ImageManager) {
+    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, @inject(ImageManager) private imageManager: ImageManager, @inject(Notifications) private notifications: Notifications) {
     }
 
     getRouter() {
@@ -37,6 +38,7 @@ export class TeamApi {
         eventRouter.get('/', this.getEvents.bind(this))
         eventRouter.post('/', authenticatedUserIsCoach, this.createEvent.bind(this))
         eventRouter.get('/:eventId', this.getEvent.bind(this))
+        eventRouter.post('/:eventId/reminder', this.sendReminder.bind(this))
         eventRouter.put('/:eventId', authenticatedUserIsCoach, this.updateEvent.bind(this))
         eventRouter.delete('/:eventId', authenticatedUserIsCoach, this.deleteEvent.bind(this))
         eventRouter.get('/:eventId/participation', this.getParticipations.bind(this))
@@ -102,6 +104,16 @@ export class TeamApi {
                 this.logger.error(error)
                 sendError(res, 500, 'internal server error')
             })
+    }
+
+    sendReminder(req: Request, res: Response) {
+        let eventId = req.params['eventId']
+        Event.findById(eventId).then(event => {
+            this.notifications.sendReminder(event, req.authenticatedUser.id)
+            sendSuccess(res, 200, {})
+        }).catch(err => {
+            sendError(res, 500, err)
+        })
     }
 
     getEvent(req: Request, res: Response) {
