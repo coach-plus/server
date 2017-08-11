@@ -47,6 +47,23 @@ export let authenticatedUserIsMemberOfTeam = (req: Request, res: Response, next:
         })
 }
 
+export let authenticatedUserIsCoachOfMembershipTeam = (req: Request, res: Response, next: Function) => {
+    let membershipId = req.params['membershipId']
+    Membership.findById(membershipId).then(changeMembership => {
+        Membership.findOne({ team: changeMembership.team, user: req.authenticatedUser.id })
+        .then(membership => {
+            if (membership != null && membership.role == 'coach') {
+                next()
+            } else {
+                sendError(res, 401, 'user is not a coach of the team')
+                return
+            }
+        }).catch(error => {
+            sendError(res, 500, 'internal server error')
+        })
+    })
+}
+
 export let authenticatedUserIsCoach = (req: Request, res: Response, next: Function) => {
     let teamId = req.params['teamId']
     isUserCoachOfTeam(req.authenticatedUser.id, teamId).then(isUserCoach => {

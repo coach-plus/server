@@ -5,7 +5,7 @@ import { User, Team, ITeam, ITeamModel, Verification, IUserModel, IUser, Invitat
 import { validate, registerUserSchema, loginUserSchema, registerTeamSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
-import { authenticationMiddleware, getRoleOfUserForTeam } from '../auth'
+import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsCoachOfMembershipTeam } from '../auth'
 import { sendError, sendSuccess } from '../api'
 import * as Uuid from 'uuid/v4'
 
@@ -20,6 +20,7 @@ export class MembershipApi {
         let router = express.Router()
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/my', this.getMyMemberships.bind(this))
+        router.put('/:membershipId/role', authenticatedUserIsCoachOfMembershipTeam, this.setRole.bind(this))
         return router
     }
 
@@ -30,6 +31,25 @@ export class MembershipApi {
                 sendError(res, 500, 'internal server error')
                 this.logger.error(error)
             })
+    }
+
+    setRole(req: Request, res:Response) {
+        let membershipId = req.params['membershipId']
+        let role = req.body.role || 'coach'
+
+        if (role != 'coach' && role != 'user') {
+            sendError(res, 400, 'Invalid role')
+            return
+        }
+        Membership.findById(membershipId).then(membership => {
+            membership.role = role
+            membership.save().then(() => {
+                sendSuccess(res, 200, '')
+            })
+        }).catch(error => {
+            sendError(res, 500, 'internal server error')
+            this.logger.error(error)
+        })
     }
 
 
