@@ -38,7 +38,7 @@ export class TeamApi {
         eventRouter.get('/', this.getEvents.bind(this))
         eventRouter.post('/', authenticatedUserIsCoach, this.createEvent.bind(this))
         eventRouter.get('/:eventId', this.getEvent.bind(this))
-        eventRouter.post('/:eventId/reminder', this.sendReminder.bind(this))
+        eventRouter.post('/:eventId/reminder', authenticatedUserIsCoach, this.sendReminder.bind(this))
         eventRouter.put('/:eventId', authenticatedUserIsCoach, this.updateEvent.bind(this))
         eventRouter.delete('/:eventId', authenticatedUserIsCoach, this.deleteEvent.bind(this))
         eventRouter.get('/:eventId/participation', this.getParticipations.bind(this))
@@ -142,6 +142,7 @@ export class TeamApi {
                 return Membership.find({ team: teamId }).populate('user').exec()
                     .then(memberships => memberships.map(membership => (
                         {
+                            _id: membership._id,
                             role: membership.role,
                             user: reduceUser(<IUserModel>membership.user)
                         })))
