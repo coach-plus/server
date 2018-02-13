@@ -16,6 +16,7 @@ export class RedirectComponent implements OnInit {
   ngOnInit() {
     this.sub = this.route.params.subscribe(params => {
       this.url = window.location.href;
+      window.scrollTo(0, -100);
     });
   }
 
