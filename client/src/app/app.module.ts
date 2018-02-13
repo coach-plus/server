@@ -8,6 +8,7 @@ import { RouterModule, Routes } from '@angular/router'
 import { AppComponent } from './app.component';
 import { RegisterComponent } from './register/register.component';
 import { VerificationComponent } from './verification/verification.component';
+import { RedirectComponent } from './redirect/redirect.component';
 
 const appRoutes: Routes = [
   {
@@ -16,6 +17,10 @@ const appRoutes: Routes = [
   {
     path: 'verification/:token',
     component: VerificationComponent
+  },
+  {
+    path: 'teams/:public/join/:token',
+    component: RedirectComponent
   }
 ]
 
@@ -23,7 +28,8 @@ const appRoutes: Routes = [
   declarations: [
     AppComponent,
     RegisterComponent,
-    VerificationComponent
+    VerificationComponent,
+    RedirectComponent
   ],
   imports: [
     BrowserModule,
