@@ -2,6 +2,7 @@ import * as mongoose from 'mongoose'
 
 
 export interface ITeam {
+    id: string
     name: string
     isPublic: boolean
     image: string

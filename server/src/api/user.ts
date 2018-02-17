@@ -3,7 +3,7 @@ import * as bcrypt from 'bcrypt'
 import * as jwt from 'jsonwebtoken'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Verification, IUserModel, IUser, IVerificationModel, reduceUser, Device, IDevice} from '../models'
+import { User, Verification, IUserModel, IUser, IVerificationModel, reduceUser, Device, IDevice, Membership, IMembershipModel, IMembership, ITeam, ITeamModel} from '../models'
 import { validate, registerUserSchema, loginUserSchema, deviceSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
@@ -28,6 +28,7 @@ export class UserApi {
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/me', this.getMyUser.bind(this))
         router.put('/me',this.editUser.bind(this))
+        router.get('/:userId/memberships',this.getMemberships.bind(this))
         router.post('/:userId/devices', authenticatedUserIsUser('userId'), this.registerDevice.bind(this))
         return router
     }
@@ -204,6 +205,29 @@ export class UserApi {
         }).catch(err => {
             sendError(res, 500, err)
         })
+    }
+
+    getMemberships(req: Request, res: Response) {
+        let userId = req.params['userId']
+        Membership.find({ user: userId }).populate('team').exec()
+            .then(memberships => {
+                if (req.authenticatedUser.id === userId) {
+                    sendSuccess(res, 200, { memberships: memberships })
+                } else {
+                    Membership.find({ user: req.authenticatedUser.id }).populate('team').exec().then(ownMemberships => {
+                        memberships = memberships.filter((membership: IMembershipModel) => {
+                            return ownMemberships.find((ownMembership) => {
+                                return ownMembership.team && ((<ITeamModel>ownMembership.team).id === (<ITeamModel>membership.team).id || (<ITeamModel> membership.team).isPublic)
+                            })
+                        })
+                        sendSuccess(res, 200, { memberships: memberships })
+                    })
+                }
+            })
+            .catch(error => {
+                sendError(res, 500, 'internal server error')
+                this.logger.error(error)
+            })
     }
 
 
