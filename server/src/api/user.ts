@@ -233,7 +233,7 @@ export class UserApi {
 
     private createJWT(user: IUserModel) {
         let tokenBody = {
-            id: user._id,
+            _id: user._id,
             email: user.email,
             firstname: user.firstname,
             lastname: user.lastname,
