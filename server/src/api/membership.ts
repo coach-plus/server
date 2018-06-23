@@ -25,7 +25,7 @@ export class MembershipApi {
     }
 
     getMyMemberships(req: Request, res: Response) {
-        Membership.find({ user: req.authenticatedUser.id }).populate('team').exec()
+        Membership.find({ user: req.authenticatedUser._id }).populate('team').exec()
             .then(memberships => sendSuccess(res, 200, { memberships: memberships }))
             .catch(error => {
                 sendError(res, 500, 'internal server error')

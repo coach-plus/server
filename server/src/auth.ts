@@ -35,7 +35,7 @@ export let getRoleOfUserForTeam = (userId: string, teamId: string) => {
 
 export let authenticatedUserIsMemberOfTeam = (req: Request, res: Response, next: Function) => {
     let teamId = req.params['teamId']
-    Membership.findOne({ user: req.authenticatedUser.id, team: teamId })
+    Membership.findOne({ user: req.authenticatedUser._id, team: teamId })
         .then(userModel => {
             if (userModel == null) {
                 sendError(res, 401, 'user is not a member of the team')
@@ -50,7 +50,7 @@ export let authenticatedUserIsMemberOfTeam = (req: Request, res: Response, next:
 export let authenticatedUserIsCoachOfMembershipTeam = (req: Request, res: Response, next: Function) => {
     let membershipId = req.params['membershipId']
     Membership.findById(membershipId).then(changeMembership => {
-        Membership.findOne({ team: changeMembership.team, user: req.authenticatedUser.id })
+        Membership.findOne({ team: changeMembership.team, user: req.authenticatedUser._id })
         .then(membership => {
             if (membership != null && membership.role == 'coach') {
                 next()
@@ -66,7 +66,7 @@ export let authenticatedUserIsCoachOfMembershipTeam = (req: Request, res: Respon
 
 export let authenticatedUserIsCoach = (req: Request, res: Response, next: Function) => {
     let teamId = req.params['teamId']
-    isUserCoachOfTeam(req.authenticatedUser.id, teamId).then(isUserCoach => {
+    isUserCoachOfTeam(req.authenticatedUser._id, teamId).then(isUserCoach => {
         if (isUserCoach) {
             next()
             return
@@ -80,7 +80,7 @@ export let authenticatedUserIsCoach = (req: Request, res: Response, next: Functi
 export let authenticatedUserIsUser = (userIdParameter: string) => {
     return (req: Request, res: Response, next: Function) => {
         let userId = req.params[userIdParameter]
-        if (userId == req.authenticatedUser.id) {
+        if (userId == req.authenticatedUser._id) {
             next()
             return
         }

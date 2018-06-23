@@ -109,7 +109,7 @@ export class TeamApi {
     sendReminder(req: Request, res: Response) {
         let eventId = req.params['eventId']
         Event.findById(eventId).then(event => {
-            this.notifications.sendReminder(event, req.authenticatedUser.id)
+            this.notifications.sendReminder(event, req.authenticatedUser._id)
             sendSuccess(res, 200, {})
         }).catch(err => {
             sendError(res, 500, err)
@@ -133,7 +133,7 @@ export class TeamApi {
 
     getTeamMembers(req: Request, res: Response) {
         let teamId = req.params['teamId']
-        Membership.findOne({ user: req.authenticatedUser.id, team: teamId })
+        Membership.findOne({ user: req.authenticatedUser._id, team: teamId })
             .then(userModel => {
                 if (userModel == null) {
                     sendError(res, 400, 'user is not a member of the team')
@@ -154,7 +154,7 @@ export class TeamApi {
     }
 
     getMyTeams(req: Request, res: Response) {
-        Membership.find({ user: req.authenticatedUser.id }).populate('team').exec()
+        Membership.find({ user: req.authenticatedUser._id }).populate('team').exec()
             .then(memberships => memberships.map(membership => membership.team))
             .then(teams => sendSuccess(res, 200, { teams: teams }))
             .catch(error => {
@@ -178,7 +178,7 @@ export class TeamApi {
                 Team.create({ name: payload.name, isPublic: payload.isPublic, image: imageName })
                     .then(team => {
                         createdTeam = team
-                        let membership: IMembership = { role: 'coach', team: team._id, user: req.authenticatedUser.id }
+                        let membership: IMembership = { role: 'coach', team: team._id, user: req.authenticatedUser._id }
                         return Membership.create(membership)
                     })
                     .then(() => sendSuccess(res, 201, createdTeam))
@@ -240,7 +240,7 @@ export class TeamApi {
                 sendSuccess(res, 201, { url: url })
                 return
             }
-            return getRoleOfUserForTeam(req.authenticatedUser.id, team._id)
+            return getRoleOfUserForTeam(req.authenticatedUser._id, team._id)
                 .then(role => {
                     if (role != 'coach') {
                         sendError(res, 400, 'user is not authorized')
@@ -274,13 +274,13 @@ export class TeamApi {
                 sendError(res, 400, 'the token is no longer valid')
                 return
             }
-            return Membership.findOne({ user: req.authenticatedUser.id, team: invitationModel.team })
+            return Membership.findOne({ user: req.authenticatedUser._id, team: invitationModel.team })
                 .then(userModel => {
                     if (userModel != null) {
                         sendError(res, 400, 'user is already a member of the team')
                         return
                     }
-                    let membership: IMembership = { role: 'user', team: invitationModel.team, user: req.authenticatedUser.id }
+                    let membership: IMembership = { role: 'user', team: invitationModel.team, user: req.authenticatedUser._id }
                     return Membership.create(membership).then(() => sendSuccess(res, 201, {}))
                 })
         }).catch(error => {
@@ -297,13 +297,13 @@ export class TeamApi {
                 sendError(res, 404, 'team does not exist or is not public')
                 return
             }
-            return Membership.findOne({ user: req.authenticatedUser.id, team: teamId })
+            return Membership.findOne({ user: req.authenticatedUser._id, team: teamId })
                 .then(userModel => {
                     if (userModel != null) {
                         sendError(res, 400, 'user is already a member of the team')
                         return
                     }
-                    let membership: IMembership = { role: 'user', team: team._id, user: req.authenticatedUser.id }
+                    let membership: IMembership = { role: 'user', team: team._id, user: req.authenticatedUser._id }
                     return Membership.create(membership).then(() => sendSuccess(res, 201, {}))
                 })
         }).catch(error => {
@@ -316,7 +316,7 @@ export class TeamApi {
     promoteUser(req: Request, res: Response) {
         let userId = req.params['userId']
         let teamId = req.params['teamId']
-        getRoleOfUserForTeam(req.authenticatedUser.id, teamId)
+        getRoleOfUserForTeam(req.authenticatedUser._id, teamId)
             .then(role => {
                 if (role != 'coach') {
                     sendError(res, 400, 'user is not authorized')
@@ -440,7 +440,7 @@ export class TeamApi {
     @validate(newsSchema)
     createNews(req: Request, res: Response) {
         let eventId = req.params['eventId']
-        let userId = req.authenticatedUser.id
+        let userId = req.authenticatedUser._id
         let model = <INews>req.body
         model.event = eventId
         model.author = userId

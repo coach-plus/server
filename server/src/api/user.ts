@@ -162,7 +162,7 @@ export class UserApi {
         if (updateImage) {
             tasks.push(new Promise((resolve, reject) => {
                 this.imageManager.storeImageAsFile(payload.image).then((imageName) => {
-                    return User.findByIdAndUpdate(req.authenticatedUser.id, { $set: {image: imageName}}).then(() => {
+                    return User.findByIdAndUpdate(req.authenticatedUser._id, { $set: {image: imageName}}).then(() => {
                         resolve();
                     })
                 }).catch(err => {
@@ -174,14 +174,14 @@ export class UserApi {
         //TODO: Add other fields
 
         Promise.all(tasks).then(results => {
-            User.findById(req.authenticatedUser.id).then(user => {
+            User.findById(req.authenticatedUser._id).then(user => {
                 sendSuccess(res, 200, reduceUser(user, true))
             })
         }).catch(errs => {
             sendError(res, 500, 'Errors occured')
         })
     }
-    
+
     @validate(deviceSchema)
     registerDevice(req: Request, res: Response) {
         let device = <IDevice>req.body;
@@ -189,10 +189,10 @@ export class UserApi {
             deviceId: device.deviceId,
             pushId: device.pushId,
             system: device.system,
-            user: req.authenticatedUser.id
+            user: req.authenticatedUser._id
         }, { upsert: true, new: true }).then(device => {
 
-            User.findById(req.authenticatedUser.id).then(user => {
+            User.findById(req.authenticatedUser._id).then(user => {
                 if (user.devices.indexOf(device._id) != -1) {
                     sendSuccess(res, 201, {device:device})
                 } else {
@@ -211,10 +211,10 @@ export class UserApi {
         let userId = req.params['userId']
         Membership.find({ user: userId }).populate('team').exec()
             .then(memberships => {
-                if (req.authenticatedUser.id === userId) {
+                if (req.authenticatedUser._id === userId) {
                     sendSuccess(res, 200, { memberships: memberships })
                 } else {
-                    Membership.find({ user: req.authenticatedUser.id }).populate('team').exec().then(ownMemberships => {
+                    Membership.find({ user: req.authenticatedUser._id }).populate('team').exec().then(ownMemberships => {
                         memberships = memberships.filter((membership: IMembershipModel) => {
                             return ownMemberships.find((ownMembership) => {
                                 return ownMembership.team && ((<ITeamModel>ownMembership.team).id === (<ITeamModel>membership.team).id || (<ITeamModel> membership.team).isPublic)
