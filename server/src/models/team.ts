@@ -2,10 +2,10 @@ import * as mongoose from 'mongoose'
 
 
 export interface ITeam {
-    id: string
     name: string
     isPublic: boolean
     image: string
+    memberCount?: number
 }
 
 export interface ITeamModel extends ITeam, mongoose.Document { }

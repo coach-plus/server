@@ -26,6 +26,20 @@ export class MembershipApi {
 
     getMyMemberships(req: Request, res: Response) {
         Membership.find({ user: req.authenticatedUser._id }).populate('team').exec()
+            .then(memberships => {
+                return Promise.all(memberships.map((membership) => {
+                    if (!membership.team) {
+                        return membership
+                    }
+                    return Membership.count({team: (<ITeamModel>membership.team)._id}).then(count => {
+                        membership = membership.toJSON()
+                        if (membership.team) {
+                            (<ITeam>membership.team).memberCount = count
+                        }
+                        return membership
+                    })
+                }))
+            })
             .then(memberships => sendSuccess(res, 200, { memberships: memberships }))
             .catch(error => {
                 sendError(res, 500, 'internal server error')
