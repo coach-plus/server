@@ -211,35 +211,44 @@ export class UserApi {
         let userId = req.params['userId']
         Membership.find({ user: userId }).populate('team').exec()
             .then(memberships => {
+
+                return Promise.all(memberships.map((membership: IMembershipModel) => {
+                    if (membership.team != null) {
+                        return Membership.count({team: (membership.team as any).id}).then(count => {
+                            membership = membership.toJSON()
+                            if (membership.team) {
+                                (<ITeam>membership.team).memberCount = count
+                            }
+                            return membership
+                        })
+                    } else {
+                        return new Promise((resolve, reject) => {
+                            resolve(membership)
+                        })
+                    }
+                }))
+            })
+            .then(memberships => {
                 if (req.authenticatedUser._id === userId) {
                     sendSuccess(res, 200, { memberships: memberships })
                 } else {
                     Membership.find({ user: req.authenticatedUser._id }).populate('team').exec().then(ownMemberships => {
-                        return Promise.all(memberships.filter((membership) => {
+                        let extendedMemberships = memberships.filter((membership: IMembershipModel) => {
                                 return ownMemberships.find((ownMembership) => {
-                                    return ownMembership.team && ((<ITeamModel>ownMembership.team).id === (<ITeamModel>membership.team).id || (<ITeamModel> membership.team).isPublic)
+                                    return ownMembership.team && ((<ITeamModel>ownMembership.team).id === (<ITeamModel>membership.team)._id.toString() || (<ITeamModel> membership.team).isPublic)
                                 })
                             }).map((membership: IMembershipModel) => {
                                 let joined = (ownMemberships.find((ownMembership) => {
-                                    return ownMembership.team && ((ownMembership.team as any).id === (membership.team as any).id)
+                                    return ownMembership.team && ((ownMembership.team as any).id === (membership.team as any)._id.toString())
                                 }) !== undefined)
-                                let m = membership.toJSON()
+                                let m = (membership.toJSON ? membership.toJSON() : membership)
                                 m.joined = joined
-                                return Membership.count({team: (membership.team as any).id}).then(count => {
-                                    membership = membership.toJSON()
-                                    if (membership.team) {
-                                        (<ITeam>membership.team).memberCount = count
-                                    }
-                                    return membership
-                                })
+                                return m
                             })
-                        ).then((memberships) => {
-                            sendSuccess(res, 200, { memberships: memberships })
-                        })
+                        sendSuccess(res, 200, { memberships: extendedMemberships })
                     })
                 }
-            })
-            .catch(error => {
+            }).catch(error => {
                 sendError(res, 500, 'internal server error')
                 this.logger.error(error)
             })
