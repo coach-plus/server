@@ -140,7 +140,17 @@ export class TeamApi {
                     return
                 }
                 return Membership.find({ team: teamId }).populate('user').exec()
-                    .then(memberships => memberships.map(membership => (
+                    .then(memberships => memberships.sort((p1, p2) => {
+                        if ((<IUserModel>p1.user).id === req.authenticatedUser._id) {
+                            return -1
+                        } else if ((<IUserModel>p2.user).id === req.authenticatedUser._id) {
+                            return 1
+                        } else if ((<IUserModel>p1.user).lastname < (<IUserModel>p2.user).lastname) {
+                            return -1
+                        } else {
+                            return 1
+                        }
+                    }).map(membership => (
                         {
                             _id: membership._id,
                             role: membership.role,
@@ -407,6 +417,18 @@ export class TeamApi {
                     user: <IUserModel>membership.user,
                     participation: participation
                 })
+            })
+
+            participationList = participationList.sort((p1, p2) => {
+                if (p1.user.id === req.authenticatedUser._id) {
+                    return -1
+                } else if (p2.user.id === req.authenticatedUser._id) {
+                    return 1
+                } else if (p1.user.lastname < p2.user.lastname) {
+                    return -1
+                } else {
+                    return 1
+                }
             })
             sendSuccess(res, 200, { participation: participationList })
         })
