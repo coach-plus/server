@@ -215,12 +215,19 @@ export class UserApi {
                     sendSuccess(res, 200, { memberships: memberships })
                 } else {
                     Membership.find({ user: req.authenticatedUser._id }).populate('team').exec().then(ownMemberships => {
-                        memberships = memberships.filter((membership: IMembershipModel) => {
+                        let newMemberships = memberships.filter((membership) => {
                             return ownMemberships.find((ownMembership) => {
                                 return ownMembership.team && ((<ITeamModel>ownMembership.team).id === (<ITeamModel>membership.team).id || (<ITeamModel> membership.team).isPublic)
                             })
+                        }).map((membership: IMembershipModel) => {
+                            let joined = (ownMemberships.find((ownMembership) => {
+                                return ownMembership.team && ((ownMembership.team as any).id === (membership.team as any).id)
+                            }) !== undefined)
+                            let m = membership.toJSON()
+                            m.joined = joined
+                            return m
                         })
-                        sendSuccess(res, 200, { memberships: memberships })
+                        sendSuccess(res, 200, { memberships: newMemberships })
                     })
                 }
             })
