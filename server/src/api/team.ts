@@ -174,31 +174,30 @@ export class TeamApi {
     }
 
     @validate(registerTeamSchema)
-    register(req: Request, res: Response) {
-        let payload: ITeam = req.body
-        let createdTeam: ITeamModel = null
-
-        Team.findOne({ name: payload.name }).then(model => {
-            if (model != null) {
+    async register(req: Request, res: Response) {
+        try{
+            let payload: ITeam = req.body
+            let createdTeam: ITeamModel = null
+    
+            const existingTeam = await Team.findOne({ name: payload.name })
+            if (existingTeam != null) {
                 sendError(res, 400, 'team does already exist')
                 return
             }
-
-            this.imageManager.storeImageAsFile(payload.image).then((imageName) => {
-                Team.create({ name: payload.name, isPublic: payload.isPublic, image: imageName })
-                    .then(team => {
-                        createdTeam = team
-                        let membership: IMembership = { role: 'coach', team: team._id, user: req.authenticatedUser._id }
-                        return Membership.create(membership)
-                    })
-                    .then(() => sendSuccess(res, 201, createdTeam))
-            }).catch(error => {
-                this.logger.error(error)
-                sendError(res, 500, 'internal server error')
-            })
-
-
-        })
+            let imageName = null
+            if(payload.image){
+                imageName = await this.imageManager.storeImageAsFile(payload.image)
+            }
+            createdTeam = await Team.create({ name: payload.name, isPublic: payload.isPublic, image: imageName })
+    
+            let membership: IMembership = { role: 'coach', team: createdTeam._id, user: req.authenticatedUser._id }
+            return Membership.create(membership)
+            sendSuccess(res, 201, createdTeam)
+        }
+        catch(error) {
+            this.logger.error(error)
+            sendError(res, 500, 'internal server error')
+        }
     }
 
     editTeam(req: Request, res: Response) {
