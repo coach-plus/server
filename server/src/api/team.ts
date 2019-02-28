@@ -283,13 +283,13 @@ export class TeamApi {
                 sendError(res, 400, 'the token is no longer valid')
                 return
             }
-            return Membership.findOne({ user: req.authenticatedUser._id, team: invitationModel.team })
+            return Membership.findOne({ user: req.authenticatedUser._id, team: invitationModel.team }).populate('team')
                 .then(userModel => {
                     if (userModel != null) {
                         sendError(res, 400, 'user is already a member of the team')
                         return
                     }
-                    let membership: IMembership = { role: 'user', team: invitationModel.team, user: req.authenticatedUser._id }
+                    let membership: IMembership = { role: 'user', team: userModel.team, user: req.authenticatedUser._id }
                     return Membership.create(membership).then(() => sendSuccess(res, 201, membership))
                 })
         }).catch(error => {
