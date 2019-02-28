@@ -290,7 +290,7 @@ export class TeamApi {
                         return
                     }
                     let membership: IMembership = { role: 'user', team: invitationModel.team, user: req.authenticatedUser._id }
-                    return Membership.create(membership).then(() => sendSuccess(res, 201, {}))
+                    return Membership.create(membership).then(() => sendSuccess(res, 201, membership))
                 })
         }).catch(error => {
             sendError(res, 500, 'internal server error')
@@ -312,8 +312,8 @@ export class TeamApi {
                         sendError(res, 400, 'user is already a member of the team')
                         return
                     }
-                    let membership: IMembership = { role: 'user', team: team._id, user: req.authenticatedUser._id }
-                    return Membership.create(membership).then(() => sendSuccess(res, 201, {}))
+                    let membership: IMembership = { role: 'user', team: team, user: req.authenticatedUser._id }
+                    return Membership.create(membership).then(() => sendSuccess(res, 201, membership))
                 })
         }).catch(error => {
             sendError(res, 500, 'internal server error')
