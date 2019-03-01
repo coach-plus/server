@@ -27,6 +27,7 @@ export class TeamApi {
         router.post('/public/join/:teamId', this.joinPublicTeam.bind(this))
         router.put('/:teamId/coaches/:userId', this.promoteUser.bind(this))
         router.get('/:teamId/members', this.getTeamMembers.bind(this))
+        router.delete('/teamId/memberships', this.leaveTeam.bind(this))
         router.post('/:teamId/invite', this.invite.bind(this))
         router.put('/:teamId', this.editTeam.bind(this))
 
@@ -469,6 +470,20 @@ export class TeamApi {
         }).catch(error => {
             this.logger.error(error)
             sendError(res, 500, 'internal server error')
+        })
+    }
+
+    leaveTeam(req: Request, res: Response) {
+        let membershipId = req.params['membershipId']
+
+        Membership.findOneAndRemove({ _id: membershipId, user: req.authenticatedUser._id }).then((result)  => {
+            console.log(result)
+            console.log('Membership:', membershipId)
+            console.log('User:', req.authenticatedUser._id)
+            sendSuccess(res, 200, {})
+        }).catch(error => {
+            this.logger.error(error)
+            sendError(res, 500, error)
         })
     }
 }
