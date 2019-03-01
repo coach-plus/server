@@ -192,7 +192,9 @@ export class TeamApi {
             createdTeam = await Team.create({ name: payload.name, isPublic: payload.isPublic, image: imageName })
     
             let membership: IMembership = { role: 'coach', team: createdTeam._id, user: req.authenticatedUser._id }
-            return Membership.create(membership)
+            const createdMembership = await Membership.create(membership)
+            const populatedMembership = await Membership.findOne({_id: createdMembership.id}).populate('team')
+            sendSuccess(res, 201, populatedMembership)
         }
         catch(error) {
             this.logger.error(error)
