@@ -137,7 +137,7 @@ export class TeamApi {
         Membership.findOne({ user: req.authenticatedUser._id, team: teamId })
             .then(userModel => {
                 if (userModel == null) {
-                    sendError(res, 400, 'user is not a member of the team')
+                    sendError(res, 401, 'user is not a member of the team')
                     return
                 }
                 return Membership.find({ team: teamId }).populate('user').exec()
