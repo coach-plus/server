@@ -5,7 +5,7 @@ import { User, Team, ITeam, ITeamModel, Verification, IUserModel, IUser, Invitat
 import { validate, registerUserSchema, loginUserSchema, registerTeamSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
-import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsCoachOfMembershipTeam } from '../auth'
+import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsCoachOfMembershipTeam, authenticatedUserIsUser } from '../auth'
 import { sendError, sendSuccess } from '../api'
 import * as Uuid from 'uuid/v4'
 
@@ -21,6 +21,7 @@ export class MembershipApi {
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/my', this.getMyMemberships.bind(this))
         router.put('/:membershipId/role', authenticatedUserIsCoachOfMembershipTeam, this.setRole.bind(this))
+        router.delete('/:membershipId', this.leaveTeam.bind(this))
         return router
     }
 
@@ -63,6 +64,17 @@ export class MembershipApi {
         }).catch(error => {
             sendError(res, 500, 'internal server error')
             this.logger.error(error)
+        })
+    }
+
+    leaveTeam(req: Request, res: Response) {
+        let membershipId = req.params['membershipId']
+
+        Membership.findOneAndRemove({ _id: membershipId, user: req.authenticatedUser._id }).then(() => {
+            sendSuccess(res, 200, {})
+        }).catch(error => {
+            this.logger.error(error)
+            sendError(res, 500, error)
         })
     }
 
