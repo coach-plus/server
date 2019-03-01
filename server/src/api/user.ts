@@ -33,8 +33,15 @@ export class UserApi {
         return router
     }
 
-    getMyUser(req: Request, res: Response) {
-        sendSuccess(res, 200, { user: req.authenticatedUser })
+    async getMyUser(req: Request, res: Response) {
+        try {
+            const user = await User.findOne({_id: req.authenticatedUser._id})
+            sendSuccess(res, 200, { user: reduceUser(user, true) })
+        } catch (error) {
+            this.logger.error(error)
+            sendError(res, 500)
+        }
+        
     }
 
     @validate(registerUserSchema)
