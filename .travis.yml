@@ -24,6 +24,6 @@ script:
 deploy:
 - provider: script
   skip_cleanup: true
-  script: cd ../ && pm2 deploy ecosystem.json staging
+  script: cd ../ && pm2 deploy ecosystem.json staging --force
   on:
     branch: master
