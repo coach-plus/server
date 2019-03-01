@@ -192,7 +192,6 @@ export class TeamApi {
     
             let membership: IMembership = { role: 'coach', team: createdTeam._id, user: req.authenticatedUser._id }
             return Membership.create(membership)
-            sendSuccess(res, 201, createdTeam)
         }
         catch(error) {
             this.logger.error(error)
