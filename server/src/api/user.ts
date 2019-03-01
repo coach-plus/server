@@ -102,8 +102,7 @@ export class UserApi {
                 success: true,
                 content: {
                     token: token,
-                    firstname: user.firstname,
-                    lastname: user.lastname
+                    user: reduceUser(user, true)
                 }
             }
             res.status(200).send(result)
