@@ -262,13 +262,7 @@ export class UserApi {
 
 
     private createJWT(user: IUserModel) {
-        let tokenBody = {
-            _id: user._id,
-            email: user.email,
-            firstname: user.firstname,
-            lastname: user.lastname,
-            image: user.image
-        }
+        let tokenBody = reduceUser(user, true)
         let token: any = null
         try {
             token = jwt.sign(tokenBody, this.config.get('jwt_secret'), {})
