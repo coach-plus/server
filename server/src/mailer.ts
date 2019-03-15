@@ -3,8 +3,9 @@ import { Logger } from './logger'
 import { inject, injectable } from 'inversify'
 import { IVerification, IUser } from './models'
 import { IMailRequest } from './interfaces'
-import { PushServer } from "./pushserver";
 import { Config } from './config'
+
+import * as mailgun from 'mailgun-js'
 
 
 @injectable()
@@ -12,7 +13,7 @@ export class Mailer {
 
     appUrl: string
 
-    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, @inject(PushServer) private pushserver: PushServer) {
+    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config) {
         this.appUrl = this.config.get('app_url')
     }
 
@@ -30,7 +31,24 @@ export class Mailer {
             to: to
         }
 
-        this.pushserver.sendMailRequest(mailRequest)
+        this.sendMailRequest(mailRequest)
 
+    }
+
+    private async sendMailRequest(mailRequest: IMailRequest) {
+        const mailConfig = this.config.get('mail')
+        try {
+            const result = await mailgun(mailConfig.mailgun).messages().send({
+                from: mailConfig.from,
+                to: mailRequest.to,
+                subject: mailRequest.subject,
+                text: mailRequest.text,
+                html: mailRequest.html
+            })
+            this.logger.info(result)
+        } catch (e) {
+            this.logger.error(e)
+        }
+        
     }
 }

@@ -8,12 +8,13 @@ import { Config } from './config'
 import { UserApi } from "./api/user"
 import { Sites } from "./sites"
 import { Mailer } from './mailer'
-import { PushServer } from './pushserver'
 import { EmailVerification } from './emailverification'
 import { TeamApi } from "./api/team";
 import { MembershipApi } from "./api/membership";
 import { ImageManager } from "./imagemanager";
 import { Notifications } from "./notifications";
+import { Apns } from './notifications/apns';
+import { Fcm } from './notifications/fcm';
 
 // use ES6 Promise for mongoose
 (<any>mongoose).Promise = global.Promise
@@ -31,7 +32,8 @@ container.bind<MembershipApi>(MembershipApi).toSelf().inSingletonScope()
 
 container.bind<Sites>(Sites).toSelf().inSingletonScope()
 
-container.bind<PushServer>(PushServer).toSelf().inSingletonScope()
+container.bind<Apns>(Apns).toSelf().inSingletonScope()
+container.bind<Fcm>(Fcm).toSelf().inSingletonScope()
 container.bind<Mailer>(Mailer).toSelf().inSingletonScope()
 container.bind<ImageManager>(ImageManager).toSelf().inSingletonScope()
 

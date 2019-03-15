@@ -67,3 +67,5 @@ typings/
 dist/
 .vscode/launch.json
 .env.json
+
+apnsKey.p8
