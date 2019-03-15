@@ -30,6 +30,7 @@ export class TeamApi {
         router.delete('/:teamId/memberships', this.leaveTeam.bind(this))
         router.post('/:teamId/invite', this.invite.bind(this))
         router.put('/:teamId', this.editTeam.bind(this))
+        router.delete('/:teamId', authenticatedUserIsCoach, this.deleteTeam.bind(this))
 
         // todo leave team
         // todo delete team ?
@@ -88,6 +89,18 @@ export class TeamApi {
             this.logger.error(error)
             sendError(res, 500, error)
         })
+    }
+
+    async deleteTeam(req: Request, res: Response) {
+        let teamId = req.params['teamId']
+
+        try {
+            await Membership.deleteMany({ team: teamId })
+            await Team.findByIdAndRemove(teamId)
+            sendSuccess(res, 200, {})
+        } catch (e) {
+            sendError(res, 500, e)
+        }
     }
 
     updateEvent(req: Request, res: Response) {
