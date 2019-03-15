@@ -194,7 +194,8 @@ export class UserApi {
             }
             await User.findByIdAndUpdate(req.authenticatedUser._id, mongoUpdateOperation)
             const user = await User.findById(req.authenticatedUser._id)
-            sendSuccess(res, 200, user)
+            const myReducedUser = reduceUser(user, true)
+            sendSuccess(res, 200, { user : myReducedUser })
         }
         catch(error) {
             sendError(res, 500, 'Errors occured')
