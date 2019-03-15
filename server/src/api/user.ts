@@ -1,5 +1,4 @@
 import * as express from 'express'
-import * as bcrypt from 'bcrypt'
 import * as jwt from 'jsonwebtoken'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
@@ -9,8 +8,9 @@ import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware, authenticatedUserIsUser } from '../auth'
 import { EmailVerification } from '../emailverification'
-import { sendSuccess, sendError } from "../api";
-import { ImageManager } from "../imagemanager";
+import { sendSuccess, sendError } from "../api"
+import { ImageManager } from "../imagemanager"
+import { Crypto } from "../crypto"
 
 @injectable()
 export class UserApi {
@@ -27,7 +27,10 @@ export class UserApi {
         router.post('/verification/:token', this.verifyEmail.bind(this))
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/me', this.getMyUser.bind(this))
-        router.put('/me',this.editUser.bind(this))
+        router.put('/me/information',this.editUserInformation.bind(this))
+        router.put('/me/image',this.editUserImage.bind(this))
+        router.put('/me/password',this.changeUserPassword.bind(this))
+
         router.get('/:userId/memberships',this.getMemberships.bind(this))
         router.post('/:userId/devices', authenticatedUserIsUser('userId'), this.registerDevice.bind(this))
         return router
@@ -45,42 +48,43 @@ export class UserApi {
     }
 
     @validate(registerUserSchema)
-    register(req: Request, res: Response) {
-        let payload = req.body;
-        let email = payload.email
-        let password = payload.password
-        let firstname = payload.firstname
-        let lastname = payload.lastname
-        let salt = bcrypt.genSaltSync()
-        let hashedPassword = bcrypt.hashSync(password, salt)
-        User.findOne({ email: payload.email }).then(userModel => {
+    async register(req: Request, res: Response) {
+        const payload = req.body;
+        const email = payload.email
+        const password = payload.password
+        const firstname = payload.firstname
+        const lastname = payload.lastname
+        try{
+            const hashedPassword = await Crypto.encryptPassword(password)
+            const userModel = await User.findOne({ email: payload.email })
             if (userModel != null) {
-                let result: IApiResponse = {
+                const result: IApiResponse = {
                     success: false,
                     message: 'email address is already registered'
                 }
                 res.status(400).send(result)
                 return
             }
-            User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname }).then((createdUser: IUserModel) => {
-                let token = this.createJWT(createdUser)
-                let result: IApiResponse = {
-                    success: true,
-                    content: {
-                        token: token
+            const createdUser: IUserModel = await User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname })
+            const token = this.createJWT(createdUser)
+            const result: IApiResponse = {
+                success: true,
+                content: {
+                    token: token
+                }
+            }
+            res.status(201).send(result)
+            this.emailverification.create(createdUser)
+        }
+        catch(error){
+            this.logger.error(error)
+                    const result: IApiResponse = {
+                        success: false,
+                        message: 'internal error'
                     }
-                }
-                res.status(201).send(result)
-                this.emailverification.create(createdUser)
-            }).catch(error => {
-                this.logger.error(error)
-                let result: IApiResponse = {
-                    success: false,
-                    message: 'internal error'
-                }
-                res.status(500).send(result)
-            })
-        })
+                    res.status(500).send(result)
+            sendError(res, 500, "internal error")
+        }
     }
 
 
@@ -158,40 +162,75 @@ export class UserApi {
             })
     }
 
-    editUser(req: Request, res: Response) {
-
+    async editUserImage(req: Request, res: Response) {
         let payload = req.body
         let updateImage = (payload.image != null)
 
-        let tasks = []
-
-        if (updateImage) {
-            tasks.push(new Promise((resolve, reject) => {
-                this.imageManager.storeImageAsFile(payload.image).then((imageName) => {
-                    return User.findByIdAndUpdate(req.authenticatedUser._id, { $set: {image: imageName}}).then(() => {
-                        resolve();
-                    })
-                }).catch(err => {
-                    reject(err);
-                })
-            }))
-        }
-
-        //TODO: Add other fields
-
-        Promise.all(tasks).then(results => {
-            User.findById(req.authenticatedUser._id).then(user => {
+        try{
+            if (updateImage) {
+                const imageName = await this.imageManager.storeImageAsFile(payload.image)
+                await User.findByIdAndUpdate(req.authenticatedUser._id, { $set: {image: imageName}})
+                const user = await User.findById(req.authenticatedUser._id)
                 sendSuccess(res, 200, reduceUser(user, true))
-            })
-        }).catch(errs => {
+            }
+            else {
+                sendError(res, 400, "image is missing in payload")
+            }
+        }
+        catch(error){
             sendError(res, 500, 'Errors occured')
-        })
+        }
+    }
+
+    async editUserInformation(req: Request, res: Response){
+        try {
+            const payload = req.body as { firstname: string, lastname: string, email: string }
+            const mongoUpdateOperation = { 
+                $set: { 
+                    firstname: payload.firstname, 
+                    lastname: payload.lastname, 
+                    email: payload.email
+                }
+            }
+            await User.findByIdAndUpdate(req.authenticatedUser._id, mongoUpdateOperation)
+            const user = await User.findById(req.authenticatedUser._id)
+            sendSuccess(res, 200, user)
+        }
+        catch(error) {
+            sendError(res, 500, 'Errors occured')
+        }
+    }
+
+    async changeUserPassword(req: Request, res: Response){
+        try{
+            let payload = req.body as { oldPassword: string, newPassword: string, newPasswordRepeat: string }
+            if(!payload.oldPassword || !payload.newPassword || !payload.newPasswordRepeat){
+                sendError(res, 400, "oldPassword, newPassword & newPasswordRepeat are required")
+                return
+            }
+            if(payload.newPassword !== payload.newPasswordRepeat){
+                sendError(res, 400, "new passwords don't match each other")
+                return
+            }
+            const user = await User.findOne({ _id: req.authenticatedUser._id })
+            const isOldPasswordCorrect = await Crypto.comparePassword(payload.oldPassword, user.password)
+            if(!isOldPasswordCorrect){
+                sendError(res, 400, "wrong password")
+                return
+            }
+            const newPassword = await Crypto.encryptPassword(payload.newPassword)
+            await User.findByIdAndUpdate(user._id, { $set : { password: newPassword }})
+            sendSuccess(res, 200, {})
+        }
+        catch(error){
+            sendError(res, 500, 'Errors occured')
+        }
     }
 
     @validate(deviceSchema)
     registerDevice(req: Request, res: Response) {
         let device = <IDevice>req.body;
-        Device.findOneAndUpdate({deviceId:device.deviceId}, {
+        Device.findOneAndUpdate({ deviceId:device.deviceId }, {
             deviceId: device.deviceId,
             pushId: device.pushId,
             system: device.system,
@@ -274,16 +313,13 @@ export class UserApi {
         return token
     }
 
-    private checkUserCrendentials(email: string, password: string) {
-        return new Promise<any>((resolve, reject) => {
-            User.findOne({ email: email }).then(user => {
-                if (bcrypt.compareSync(password, user.password)) {
-                    resolve(user)
-                    return
-                }
-                reject('wrong password')
-            }).catch(error => reject(error))
-        });
+    private async checkUserCrendentials(email: string, password: string) {
+        const user = await User.findOne({ email: email })
+        const passwordCorrect = await Crypto.comparePassword(password, user.password)
+        if (passwordCorrect) {
+            return user
+        }
+        throw new Error('wrong password')
     }
 
 }
