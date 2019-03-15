@@ -28,7 +28,6 @@ export class TeamApi {
         router.put('/:teamId/coaches/:userId', this.promoteUser.bind(this))
         router.get('/:teamId/members', this.getTeamMembers.bind(this))
         router.delete('/:teamId/memberships', this.leaveTeam.bind(this))
-        router.delete('/:teamId/memberships/:membershipId', authenticatedUserIsCoach, this.removeUserFromTeam.bind(this))
         router.post('/:teamId/invite', this.invite.bind(this))
         router.put('/:teamId', this.editTeam.bind(this))
         router.delete('/:teamId', authenticatedUserIsCoach, this.deleteTeam.bind(this))
@@ -497,16 +496,5 @@ export class TeamApi {
             this.logger.error(error)
             sendError(res, 500, error)
         })
-    }
-
-    async removeUserFromTeam(req: Request, res: Response) {
-        try {
-            let membershipId = req.params['membershipId']
-            await Membership.findByIdAndRemove(membershipId)
-            sendSuccess(res, 200, {})
-        } catch (error) {
-            this.logger.error(error)
-            sendError(res, 500, error)
-        }
     }
 }

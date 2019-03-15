@@ -21,6 +21,7 @@ export class MembershipApi {
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/my', this.getMyMemberships.bind(this))
         router.put('/:membershipId/role', authenticatedUserIsCoachOfMembershipTeam, this.setRole.bind(this))
+        router.delete('/:membershipId', authenticatedUserIsCoachOfMembershipTeam, this.removeUserFromTeam.bind(this))
         return router
     }
 
@@ -64,5 +65,16 @@ export class MembershipApi {
             sendError(res, 500, 'internal server error')
             this.logger.error(error)
         })
+    }
+
+    async removeUserFromTeam(req: Request, res: Response) {
+        try {
+            let membershipId = req.params['membershipId']
+            await Membership.findByIdAndRemove(membershipId)
+            sendSuccess(res, 200, {})
+        } catch (error) {
+            this.logger.error(error)
+            sendError(res, 500, error)
+        }
     }
 }
