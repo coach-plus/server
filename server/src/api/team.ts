@@ -215,35 +215,30 @@ export class TeamApi {
         }
     }
 
-    editTeam(req: Request, res: Response) {
-
-        let teamId = req.params['teamId']
-        let payload = req.body
-        let updateImage = (payload.image != null)
-
-        let tasks = []
-
-        if (updateImage) {
-            tasks.push(new Promise((resolve, reject) => {
-                this.imageManager.storeImageAsFile(payload.image).then((imageName) => {
-                    return Team.findByIdAndUpdate(teamId, { $set: {image: imageName}}).then(() => {
-                        resolve();
-                    })
-                }).catch(err => {
-                    reject(err);
-                })
-            }))
+    async editTeam(req: Request, res: Response) {
+        try {
+            let teamId = req.params['teamId']
+            let payload = req.body as ITeam
+            let updateImage = (payload.image != null)
+    
+            const updateTeam = { 
+                $set: {
+                    name: payload.name, 
+                    isPublic: payload.isPublic 
+                }
+            }
+            if (updateImage) {
+                const imageName = await this.imageManager.storeImageAsFile(payload.image)
+                updateTeam.$set["image"] = imageName
+            }
+            await Team.findByIdAndUpdate(teamId, updateTeam)
+    
+            const team = await Team.findById(teamId)
+            sendSuccess(res, 200, team)
         }
-
-        //TODO: Add other fields
-
-        Promise.all(tasks).then(results => {
-            Team.findById(teamId).then(team => {
-                sendSuccess(res, 200, team)
-            })
-        }).catch(errs => {
-            sendError(res, 500, 'Errors occured')
-        })
+        catch(error){
+            sendError(res, 500, 'Errors occurred')
+        }
     }
 
 
