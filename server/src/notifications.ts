@@ -1,17 +1,17 @@
-import { IUserModel } from './models/user';
 import { Logger } from './logger'
 import { inject, injectable } from 'inversify'
-import { IVerification, IUser, IEventModel, IDevice, Device, Membership } from './models'
+import { IUser, IEventModel, IDevice, Device, Membership } from './models'
 import { IPushRequest } from './interfaces'
 import { Config } from './config'
-import { Apns } from './notifications/apns';
-import { Fcm } from './notifications/fcm';
+import { Apns } from './notifications/apns'
+import { Fcm } from './notifications/fcm'
 
 
 @injectable()
 export class Notifications {
 
-    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, @inject(Apns) private apns: Apns, @inject(Fcm) private fcm: Fcm) { }
+    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, 
+    @inject(Apns) private apns: Apns, @inject(Fcm) private fcm: Fcm) { }
 
     sendReminder(event: IEventModel, sendingUserId:string) {
         Membership.find({team:event.team}).populate({

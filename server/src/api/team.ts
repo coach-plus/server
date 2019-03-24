@@ -15,7 +15,8 @@ import { Notifications } from "../notifications"
 @injectable()
 export class TeamApi {
 
-    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, @inject(ImageManager) private imageManager: ImageManager, @inject(Notifications) private notifications: Notifications) {
+    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, 
+    @inject(ImageManager) private imageManager: ImageManager, @inject(Notifications) private notifications: Notifications) {
     }
 
     getRouter() {
@@ -408,10 +409,12 @@ export class TeamApi {
         let userId = req.params.userId
         let eventId = req.params.eventId
         let participationList: { user: IUserModel, participation: IParticipationModel }[] = []
+        
+        const participation = 
 
         Promise.all([
-            Membership.find({ team: teamId }).populate('user', reducedUserPopulationFields),
-            Participation.find({ event: eventId })
+            Membership.find({ team: teamId }).populate('user', reducedUserPopulationFields).exec(),
+            Participation.find({ event: eventId }).exec()
         ]).then(result => {
             let memberships = result[0]
             let participation = result[1]

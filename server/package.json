@@ -18,6 +18,7 @@
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
     "express-handlebars": "^3.0.0",
+    "firebase-admin": "^7.1.1",
     "inversify": "^3.0.0",
     "jsonschema": "^1.1.1",
     "jsonwebtoken": "^7.3.0",
@@ -37,6 +38,6 @@
     "@types/mongoose": "^4.7.3",
     "@types/node": "^8.10.44",
     "@types/uuid": "^2.0.29",
-    "typescript": "^2.1.5"
+    "typescript": "^3.3.4000"
   }
 }
