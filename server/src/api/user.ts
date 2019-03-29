@@ -70,7 +70,8 @@ export class UserApi {
             const result: IApiResponse = {
                 success: true,
                 content: {
-                    token: token
+                    token: token,
+                    user: reduceUser(createdUser, true)
                 }
             }
             res.status(201).send(result)
