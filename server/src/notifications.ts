@@ -35,8 +35,8 @@ export class Notifications {
                 category: 'EVENT_REMINDER',
                 content: event.description,
                 payload: {
-                    eventId: event._id,
-                    teamId: event.team
+                    eventId: event._id.toString(),
+                    teamId: event.team.toString()
                 },
                 subtitle: event.start.toDateString(), //TODO: readable date format
                 title: event.name
