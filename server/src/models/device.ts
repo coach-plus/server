@@ -1,10 +1,14 @@
 import * as mongoose from 'mongoose'
 import { IUser } from './user'
 
+export enum System {
+    Android = 'android',
+    IOS = 'ios'
+}
 
 export interface IDevice {
     user: string | IUser
-    system: string
+    system: System
     deviceId: string
     pushId: string
 }
