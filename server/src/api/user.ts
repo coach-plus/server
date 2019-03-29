@@ -230,28 +230,28 @@ export class UserApi {
     }
 
     @validate(deviceSchema)
-    registerDevice(req: Request, res: Response) {
-        let device = <IDevice>req.body;
-        Device.findOneAndUpdate({ deviceId:device.deviceId }, {
-            deviceId: device.deviceId,
-            pushId: device.pushId,
-            system: device.system,
+    async registerDevice(req: Request, res: Response) {
+        let payload = req.body as IDevice
+        try{
+           const device = await Device.findOneAndUpdate({ deviceId:payload.deviceId }, {
+            deviceId: payload.deviceId,
+            pushId: payload.pushId,
+            system: payload.system,
             user: req.authenticatedUser._id
-        }, { upsert: true, new: true }).then(device => {
+            }, { upsert: true, new: true })
 
-            User.findById(req.authenticatedUser._id).then(user => {
-                if (user.devices.indexOf(device._id) != -1) {
-                    sendSuccess(res, 201, {device:device})
-                } else {
-                    user.devices.push(device._id);
-                    user.save().then(() => {
-                        sendSuccess(res, 201, {device:device})
-                    })
-                }
-            })
-        }).catch(err => {
-            sendError(res, 500, err)
-        })
+            const user = await User.findById(req.authenticatedUser._id)
+            if (user.devices.indexOf(device._id) != -1) {
+                sendSuccess(res, 201, {device:device})
+            } else {
+                user.devices.push(device.id);
+                await user.save()
+                sendSuccess(res, 201, {device:device})
+            }
+        }
+        catch(error){
+            sendError(res, 500, error)
+        }
     }
 
     getMemberships(req: Request, res: Response) {
