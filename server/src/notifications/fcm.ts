@@ -22,7 +22,12 @@ export class Fcm {
 
     public async sendNotification(devices: IDevice[], pushRequest: IPushRequest) {
         const tokens = devices.map(device => device.pushId)
-        let data = Object.assign({ category: pushRequest.category }, pushRequest.payload) 
+        const additionalPayload = { 
+            category: pushRequest.category, 
+            title: pushRequest.title, 
+            subtitle: pushRequest.subtitle 
+        }
+        let data = Object.assign(additionalPayload, pushRequest.payload) 
         data.category = pushRequest.category
         const message : firebaseAdmin.messaging.MulticastMessage = {
             data : data,
