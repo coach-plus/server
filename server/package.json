@@ -23,7 +23,7 @@
     "jsonschema": "^1.1.1",
     "jsonwebtoken": "^7.3.0",
     "mailgun-js": "^0.22.0",
-    "mongoose": "^4.7.7",
+    "mongoose": "^4.13.18",
     "reflect-metadata": "^0.1.9",
     "uuid": "^3.0.1",
     "winston": "^2.3.0"
