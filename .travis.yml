@@ -7,6 +7,7 @@ script:
   - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
   - docker build -t mathandoro/coach-plus-server:$TRAVIS_BUILD_NUMBER -t mathandoro/coach-plus-server:latest .
   - docker push mathandoro/coach-plus-server:$TRAVIS_BUILD_NUMBER
+  - docker push mathandoro/coach-plus-server:latest
 deploy:
   skip_cleanup: true
   provider: script
