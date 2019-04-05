@@ -220,7 +220,7 @@ export class TeamApi {
         try {
             let teamId = req.params['teamId']
             let payload = req.body as ITeam
-            let updateImage = (payload.image != null)
+            let updateImage = (payload.image != null && payload.image !== '')
     
             const updateTeam = { 
                 $set: {
