@@ -9,8 +9,8 @@ import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware, authenticatedUserIsUser } from '../auth'
 import { EmailVerification } from '../emailverification'
-import { sendSuccess, sendError } from "../api";
-import { ImageManager } from "../imagemanager";
+import { sendSuccess, sendError } from "../api"
+import { ImageManager } from "../imagemanager"
 
 @injectable()
 export class UserApi {
