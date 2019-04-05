@@ -1,7 +1,13 @@
-language: node_js
-node_js:
-- '8'
+language: python
+python:
+  - "3.6"
+install:
+  - pip install portainer-cli
 script:
   - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-  - docker build -t mathandoro/coach-plus-server:$TRAVIS_BUILD_NUMBER .
+  - docker build -t mathandoro/coach-plus-server:$TRAVIS_BUILD_NUMBER -t mathandoro/coach-plus-server:latest .
   - docker push mathandoro/coach-plus-server:$TRAVIS_BUILD_NUMBER
+deploy:
+  - portainer-cli configure https://portainer.server01.coach.plus/
+  - portainer-cli login $PORTAINER_USER $PORTAINER_PASSWORD
+  - portainer-cli update_stack 2 1 dev.coach.plus.stack.yml
