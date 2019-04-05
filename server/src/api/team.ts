@@ -15,8 +15,8 @@ import { Notifications } from "../notifications"
 @injectable()
 export class TeamApi {
 
-    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, 
-    @inject(ImageManager) private imageManager: ImageManager, @inject(Notifications) private notifications: Notifications) {
+    constructor(@inject(Logger) private logger: Logger, @inject(Config) private config: Config,
+        @inject(ImageManager) private imageManager: ImageManager, @inject(Notifications) private notifications: Notifications) {
     }
 
     getRouter() {
@@ -190,29 +190,30 @@ export class TeamApi {
 
     @validate(registerTeamSchema)
     async register(req: Request, res: Response) {
-        try{
+        try {
             let payload: ITeam = req.body
             let createdTeam: ITeamModel = null
-    
+
             const existingTeam = await Team.findOne({ name: payload.name })
             if (existingTeam != null) {
                 sendError(res, 400, 'team does already exist')
                 return
             }
             let imageName = null
-            if(payload.image){
+            if (payload.image) {
                 imageName = await this.imageManager.storeImageAsFile(payload.image)
             }
             createdTeam = await Team.create({ name: payload.name, isPublic: payload.isPublic, image: imageName })
-    
+
             let membership: IMembership = { role: 'coach', team: createdTeam._id, user: req.authenticatedUser._id }
             const createdMembership = await Membership.create(membership)
-            const populatedMembership = await Membership.findOne({_id: createdMembership.id}).populate('team')
-            const team : ITeam = (populatedMembership.team as any).toJSON()
+            let populatedMembership = await Membership.findOne({ _id: createdMembership.id }).populate('team')
+            populatedMembership = populatedMembership.toJSON()
+            const team = populatedMembership.team as ITeam
             team.memberCount = 1
             sendSuccess(res, 201, populatedMembership)
         }
-        catch(error) {
+        catch (error) {
             this.logger.error(error)
             sendError(res, 500, 'internal server error')
         }
@@ -223,11 +224,11 @@ export class TeamApi {
             let teamId = req.params['teamId']
             let payload = req.body as ITeam
             let updateImage = (payload.image != null && payload.image !== '')
-    
-            const updateTeam = { 
+
+            const updateTeam = {
                 $set: {
-                    name: payload.name, 
-                    isPublic: payload.isPublic 
+                    name: payload.name,
+                    isPublic: payload.isPublic
                 }
             }
             if (updateImage) {
@@ -235,11 +236,11 @@ export class TeamApi {
                 updateTeam.$set["image"] = imageName
             }
             await Team.findByIdAndUpdate(teamId, updateTeam)
-    
+
             const team = await Team.findById(teamId)
             sendSuccess(res, 200, team)
         }
-        catch(error){
+        catch (error) {
             sendError(res, 500, 'Errors occurred')
         }
     }
@@ -372,7 +373,7 @@ export class TeamApi {
                 sendError(res, 400, 'event has already started')
                 return
             }
-            return Participation.findOneAndUpdate({ event: eventId, user: userId }, { $set: { willAttend: willAttend} }, { upsert: true, new: true })
+            return Participation.findOneAndUpdate({ event: eventId, user: userId }, { $set: { willAttend: willAttend } }, { upsert: true, new: true })
                 .then(result => {
                     sendSuccess(res, 200, result)
                 })
@@ -411,41 +412,41 @@ export class TeamApi {
         let userId = req.params.userId
         let eventId = req.params.eventId
         let participationList: { user: IUserModel, participation: IParticipationModel }[] = []
-        
-        const participation = 
 
-        Promise.all([
-            Membership.find({ team: teamId }).populate('user', reducedUserPopulationFields).exec(),
-            Participation.find({ event: eventId }).exec()
-        ]).then(result => {
-            let memberships = result[0]
-            let participation = result[1]
-            let participationMap = new Map<string, IParticipationModel>()
-            participation.forEach(participation => {
-                participationMap.set('' + <string>participation.user, participation)
-            })
-            memberships.forEach(membership => {
-                let key = '' + (<IUserModel>membership.user)._id
-                let participation = participationMap.get(key) || null
-                participationList.push({
-                    user: <IUserModel>membership.user,
-                    participation: participation
+        const participation =
+
+            Promise.all([
+                Membership.find({ team: teamId }).populate('user', reducedUserPopulationFields).exec(),
+                Participation.find({ event: eventId }).exec()
+            ]).then(result => {
+                let memberships = result[0]
+                let participation = result[1]
+                let participationMap = new Map<string, IParticipationModel>()
+                participation.forEach(participation => {
+                    participationMap.set('' + <string>participation.user, participation)
                 })
-            })
+                memberships.forEach(membership => {
+                    let key = '' + (<IUserModel>membership.user)._id
+                    let participation = participationMap.get(key) || null
+                    participationList.push({
+                        user: <IUserModel>membership.user,
+                        participation: participation
+                    })
+                })
 
-            participationList = participationList.sort((p1, p2) => {
-                if (p1.user.id === req.authenticatedUser._id) {
-                    return -1
-                } else if (p2.user.id === req.authenticatedUser._id) {
-                    return 1
-                } else if (p1.user.lastname < p2.user.lastname) {
-                    return -1
-                } else {
-                    return 1
-                }
+                participationList = participationList.sort((p1, p2) => {
+                    if (p1.user.id === req.authenticatedUser._id) {
+                        return -1
+                    } else if (p2.user.id === req.authenticatedUser._id) {
+                        return 1
+                    } else if (p1.user.lastname < p2.user.lastname) {
+                        return -1
+                    } else {
+                        return 1
+                    }
+                })
+                sendSuccess(res, 200, { participation: participationList })
             })
-            sendSuccess(res, 200, { participation: participationList })
-        })
     }
 
 
@@ -490,7 +491,7 @@ export class TeamApi {
 
     leaveTeam(req: Request, res: Response) {
         let teamId = req.params['teamId']
-        Membership.findOneAndRemove({ team: teamId, user: req.authenticatedUser._id }).then((result)  => {
+        Membership.findOneAndRemove({ team: teamId, user: req.authenticatedUser._id }).then((result) => {
             sendSuccess(res, 200, {})
         }).catch(error => {
             this.logger.error(error)
