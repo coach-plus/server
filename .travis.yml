@@ -3,5 +3,5 @@ node_js:
 - '8'
 script:
   - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-  - docker build -t coach-plus/server:$TRAVIS_BUILD_NUMBER .
-  - docker push coach-plus/server:$TRAVIS_BUILD_NUMBER
+  - docker build -t mathandoro/coach-plus-server:$TRAVIS_BUILD_NUMBER .
+  - docker push mathandoro/coach-plus-server:$TRAVIS_BUILD_NUMBER
