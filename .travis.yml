@@ -8,6 +8,8 @@ script:
   - docker build -t mathandoro/coach-plus-server:$TRAVIS_BUILD_NUMBER -t mathandoro/coach-plus-server:latest .
   - docker push mathandoro/coach-plus-server:$TRAVIS_BUILD_NUMBER
 deploy:
-  - portainer-cli configure https://portainer.server01.coach.plus/
-  - portainer-cli login $PORTAINER_USER $PORTAINER_PASSWORD
-  - portainer-cli update_stack 2 1 dev.coach.plus.stack.yml
+  skip_cleanup: true
+  provider: script
+  script: portainer-cli configure https://portainer.server01.coach.plus/ && portainer-cli login $PORTAINER_USER $PORTAINER_PASSWORD && portainer-cli update_stack 2 1 dev.coach.plus.stack.yml
+  on:
+    branch: master
