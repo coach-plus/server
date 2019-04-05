@@ -21,7 +21,7 @@ export class MembershipApi {
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/my', this.getMyMemberships.bind(this))
         router.put('/:membershipId/role', authenticatedUserIsCoachOfMembershipTeam, this.setRole.bind(this))
-        router.delete('/:membershipId', this.leaveTeam.bind(this))
+        router.delete('/:membershipId', authenticatedUserIsCoachOfMembershipTeam, this.removeUserFromTeam.bind(this))
         return router
     }
 
@@ -67,16 +67,14 @@ export class MembershipApi {
         })
     }
 
-    leaveTeam(req: Request, res: Response) {
-        let membershipId = req.params['membershipId']
-
-        Membership.findOneAndRemove({ _id: membershipId, user: req.authenticatedUser._id }).then(() => {
+    async removeUserFromTeam(req: Request, res: Response) {
+        try {
+            let membershipId = req.params['membershipId']
+            await Membership.findByIdAndRemove(membershipId)
             sendSuccess(res, 200, {})
-        }).catch(error => {
+        } catch (error) {
             this.logger.error(error)
             sendError(res, 500, error)
-        })
+        }
     }
-
-
 }

@@ -1,6 +1,7 @@
-import { IDevice } from './../models'
+import { IDevice } from '../models'
 
-export interface IPushRequest {
+export interface IApnsPushRequest {
+    devices: IDevice[]
     title: string
     subtitle: string
     content: string

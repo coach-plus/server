@@ -24,7 +24,7 @@ let userSchema = new mongoose.Schema({
     registered: { type: Date, default: Date.now },
     image: String,
     devices : [{ type: mongoose.Schema.Types.ObjectId, ref: 'Device' }]
-})
+}, { usePushEach: true })
 
 export let User = mongoose.model<IUserModel>('User', userSchema)
 

@@ -15,7 +15,8 @@ import { Notifications } from "../notifications"
 @injectable()
 export class TeamApi {
 
-    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, @inject(ImageManager) private imageManager: ImageManager, @inject(Notifications) private notifications: Notifications) {
+    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, 
+    @inject(ImageManager) private imageManager: ImageManager, @inject(Notifications) private notifications: Notifications) {
     }
 
     getRouter() {
@@ -27,8 +28,10 @@ export class TeamApi {
         router.post('/public/join/:teamId', this.joinPublicTeam.bind(this))
         router.put('/:teamId/coaches/:userId', this.promoteUser.bind(this))
         router.get('/:teamId/members', this.getTeamMembers.bind(this))
+        router.delete('/:teamId/memberships', this.leaveTeam.bind(this))
         router.post('/:teamId/invite', this.invite.bind(this))
         router.put('/:teamId', this.editTeam.bind(this))
+        router.delete('/:teamId', authenticatedUserIsCoach, this.deleteTeam.bind(this))
 
         // todo leave team
         // todo delete team ?
@@ -89,6 +92,18 @@ export class TeamApi {
         })
     }
 
+    async deleteTeam(req: Request, res: Response) {
+        let teamId = req.params['teamId']
+
+        try {
+            await Membership.deleteMany({ team: teamId })
+            await Team.findByIdAndRemove(teamId)
+            sendSuccess(res, 200, {})
+        } catch (e) {
+            sendError(res, 500, e)
+        }
+    }
+
     updateEvent(req: Request, res: Response) {
         let eventId = req.params['eventId']
         let teamId = req.params['teamId']
@@ -136,7 +151,7 @@ export class TeamApi {
         Membership.findOne({ user: req.authenticatedUser._id, team: teamId })
             .then(userModel => {
                 if (userModel == null) {
-                    sendError(res, 400, 'user is not a member of the team')
+                    sendError(res, 401, 'user is not a member of the team')
                     return
                 }
                 return Membership.find({ team: teamId }).populate('user').exec()
@@ -191,8 +206,9 @@ export class TeamApi {
             createdTeam = await Team.create({ name: payload.name, isPublic: payload.isPublic, image: imageName })
     
             let membership: IMembership = { role: 'coach', team: createdTeam._id, user: req.authenticatedUser._id }
-            return Membership.create(membership)
-            sendSuccess(res, 201, createdTeam)
+            const createdMembership = await Membership.create(membership)
+            const populatedMembership = await Membership.findOne({_id: createdMembership.id}).populate('team')
+            sendSuccess(res, 201, populatedMembership)
         }
         catch(error) {
             this.logger.error(error)
@@ -200,35 +216,30 @@ export class TeamApi {
         }
     }
 
-    editTeam(req: Request, res: Response) {
-
-        let teamId = req.params['teamId']
-        let payload = req.body
-        let updateImage = (payload.image != null)
-
-        let tasks = []
-
-        if (updateImage) {
-            tasks.push(new Promise((resolve, reject) => {
-                this.imageManager.storeImageAsFile(payload.image).then((imageName) => {
-                    return Team.findByIdAndUpdate(teamId, { $set: {image: imageName}}).then(() => {
-                        resolve();
-                    })
-                }).catch(err => {
-                    reject(err);
-                })
-            }))
+    async editTeam(req: Request, res: Response) {
+        try {
+            let teamId = req.params['teamId']
+            let payload = req.body as ITeam
+            let updateImage = (payload.image != null)
+    
+            const updateTeam = { 
+                $set: {
+                    name: payload.name, 
+                    isPublic: payload.isPublic 
+                }
+            }
+            if (updateImage) {
+                const imageName = await this.imageManager.storeImageAsFile(payload.image)
+                updateTeam.$set["image"] = imageName
+            }
+            await Team.findByIdAndUpdate(teamId, updateTeam)
+    
+            const team = await Team.findById(teamId)
+            sendSuccess(res, 200, team)
         }
-
-        //TODO: Add other fields
-
-        Promise.all(tasks).then(results => {
-            Team.findById(teamId).then(team => {
-                sendSuccess(res, 200, team)
-            })
-        }).catch(errs => {
-            sendError(res, 500, 'Errors occured')
-        })
+        catch(error){
+            sendError(res, 500, 'Errors occurred')
+        }
     }
 
 
@@ -398,10 +409,12 @@ export class TeamApi {
         let userId = req.params.userId
         let eventId = req.params.eventId
         let participationList: { user: IUserModel, participation: IParticipationModel }[] = []
+        
+        const participation = 
 
         Promise.all([
-            Membership.find({ team: teamId }).populate('user', reducedUserPopulationFields),
-            Participation.find({ event: eventId })
+            Membership.find({ team: teamId }).populate('user', reducedUserPopulationFields).exec(),
+            Participation.find({ event: eventId }).exec()
         ]).then(result => {
             let memberships = result[0]
             let participation = result[1]
@@ -470,6 +483,16 @@ export class TeamApi {
         }).catch(error => {
             this.logger.error(error)
             sendError(res, 500, 'internal server error')
+        })
+    }
+
+    leaveTeam(req: Request, res: Response) {
+        let teamId = req.params['teamId']
+        Membership.findOneAndRemove({ team: teamId, user: req.authenticatedUser._id }).then((result)  => {
+            sendSuccess(res, 200, {})
+        }).catch(error => {
+            this.logger.error(error)
+            sendError(res, 500, error)
         })
     }
 }

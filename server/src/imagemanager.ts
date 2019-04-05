@@ -17,7 +17,7 @@ export class ImageManager {
         this.appUrl = this.config.get('app_url')
     }
 
-    storeImageAsFile(content: String) {
+    storeImageAsFile(content: String): Promise<string> {
         return new Promise((resolve, reject) => {
 
             let splitted = content.split('/')
@@ -32,6 +32,7 @@ export class ImageManager {
             fs.writeFile(filepath, base64Data, 'base64', (err) => {
                 if (err) {
                     reject(err)
+                    return
                 }
                 resolve(filename)
             });
