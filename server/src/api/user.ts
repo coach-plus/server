@@ -11,13 +11,15 @@ import { EmailVerification } from '../emailverification'
 import { sendSuccess, sendError } from "../api"
 import { ImageManager } from "../imagemanager"
 import { Crypto } from "../crypto"
+import * as PasswordGenerator from 'generate-password'
+import { Mailer } from '../mailer';
 
 @injectable()
 export class UserApi {
 
     constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config,
         @inject(EmailVerification) private emailverification: EmailVerification,
-        @inject(ImageManager) private imageManager: ImageManager) {
+        @inject(ImageManager) private imageManager: ImageManager, @inject(Mailer) private mailer: Mailer) {
     }
 
     getRouter() {
@@ -25,6 +27,7 @@ export class UserApi {
         router.post('/register', this.register.bind(this))
         router.post('/login', this.login.bind(this))
         router.post('/verification/:token', this.verifyEmail.bind(this))
+        router.put('/password', this.resetPassword.bind(this))
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/me', this.getMyUser.bind(this))
         router.put('/me/information',this.editUserInformation.bind(this))
@@ -222,6 +225,36 @@ export class UserApi {
             }
             const newPassword = await Crypto.encryptPassword(payload.newPassword)
             await User.findByIdAndUpdate(user._id, { $set : { password: newPassword }})
+            sendSuccess(res, 200, {})
+        }
+        catch(error){
+            sendError(res, 500, 'Errors occured')
+        }
+    }
+
+    async resetPassword(req: Request, res: Response){
+        try{
+            let payload = req.body as { email: string }
+            if (!payload.email){
+                sendError(res, 400, "email address is required")
+                return
+            }
+            const user = await User.findOne({ email: payload.email })
+
+            if (!user) {
+                sendError(res, 404, "user not found")
+                return
+            }
+
+            const newPassword = PasswordGenerator.generate({
+                excludeSimilarCharacters: true,
+                length: 12,
+                numbers: true
+            })
+            
+            const newPasswordEncrypted = await Crypto.encryptPassword(newPassword)
+            await User.findByIdAndUpdate(user._id, { $set : { password: newPasswordEncrypted }})
+            this.mailer.sendPasswordEmail(user, newPassword)
             sendSuccess(res, 200, {})
         }
         catch(error){

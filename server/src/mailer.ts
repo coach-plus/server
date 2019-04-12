@@ -35,6 +35,19 @@ export class Mailer {
 
     }
 
+    sendPasswordEmail(user: IUser, newPassword: string) {
+        let subject = 'Your new Password'
+        let content = `<p>Your new password is: <strong>${newPassword}</strong></p>`
+        let to = user.email
+
+        let mailRequest: IMailRequest = {
+            html: content,
+            subject: subject,
+            to: to
+        }
+        this.sendMailRequest(mailRequest)
+    }
+
     private async sendMailRequest(mailRequest: IMailRequest) {
         const mailConfig = this.config.get('mail')
         try {
