@@ -194,11 +194,14 @@ export class TeamApi {
             let payload: ITeam = req.body
             let createdTeam: ITeamModel = null
 
-            const existingTeam = await Team.findOne({ name: payload.name })
-            if (existingTeam != null) {
-                sendError(res, 400, 'team does already exist')
-                return
+            if (payload.isPublic) {
+                const existingTeam = await Team.findOne({ name: payload.name, isPublic: true })
+                if (existingTeam != null) {
+                    sendError(res, 400, 'team does already exist')
+                    return
+                }
             }
+
             let imageName = null
             if (payload.image) {
                 imageName = await this.imageManager.storeImageAsFile(payload.image)
