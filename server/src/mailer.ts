@@ -17,11 +17,29 @@ export class Mailer {
         this.appUrl = this.config.get('app_url')
     }
 
-    sendVerificationEmail(verification: IVerification) {
+    sendRegistrationMail(verification: IVerification) {
 
         let user = <IUser>verification.user
 
         let subject = 'You are registered!'
+        let content = `Please click the following link: <a href="${this.appUrl}verification/${verification.token}">Confirm E-Mail Address</a>`
+        let to = user.email
+
+        let mailRequest: IMailRequest = {
+            html: content,
+            subject: subject,
+            to: to
+        }
+
+        this.sendMailRequest(mailRequest)
+
+    }
+
+    sendVerificationMail(verification: IVerification) {
+
+        let user = <IUser>verification.user
+
+        let subject = 'Please confirm your email address!'
         let content = `Please click the following link: <a href="${this.appUrl}verification/${verification.token}">Confirm E-Mail Address</a>`
         let to = user.email
 

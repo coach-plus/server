@@ -33,6 +33,7 @@ export class UserApi {
         router.put('/me/information',this.editUserInformation.bind(this))
         router.put('/me/image',this.editUserImage.bind(this))
         router.put('/me/password',this.changeUserPassword.bind(this))
+        router.post('/me/verification', this.resendVerificationEmail.bind(this))
 
         router.get('/:userId/memberships',this.getMemberships.bind(this))
         router.post('/:userId/devices', authenticatedUserIsUser('userId'), this.registerDevice.bind(this))
@@ -68,7 +69,7 @@ export class UserApi {
                 res.status(400).send(result)
                 return
             }
-            const createdUser: IUserModel = await User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname })
+            const createdUser: IUserModel = await User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname, emailVerified: false })
             const token = this.createJWT(createdUser)
             const result: IApiResponse = {
                 success: true,
@@ -78,7 +79,7 @@ export class UserApi {
                 }
             }
             res.status(201).send(result)
-            this.emailverification.create(createdUser)
+            this.emailverification.create(createdUser, true)
         }
         catch(error){
             this.logger.error(error)
@@ -258,6 +259,29 @@ export class UserApi {
             sendSuccess(res, 200, {})
         }
         catch(error){
+            sendError(res, 500, 'Errors occured')
+        }
+    }
+
+    async resendVerificationEmail(req: Request, res: Response) {
+        try{
+            let userId = req.authenticatedUser._id
+
+            const user = await User.findById(userId)
+            if (!user) {
+                sendError(res, 400, "user not found")
+                return
+            }
+
+            if (user.emailVerified === true) {
+                sendError(res, 412, "email is already verified")
+                return
+            }
+
+            await this.emailverification.create(user, false)
+            sendSuccess(res, 200, {})
+
+        } catch(error){
             sendError(res, 500, 'Errors occured')
         }
     }

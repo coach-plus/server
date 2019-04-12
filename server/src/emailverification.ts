@@ -10,7 +10,7 @@ export class EmailVerification {
 
     constructor( @inject(Logger) private logger: Logger, @inject(Mailer) private mailer: Mailer) { }
 
-    create(user: IUserModel) {
+    create(user: IUserModel, causedByRegistration: boolean) {
 
         let verification: IVerification = {
             token: Uuid(),
@@ -20,7 +20,11 @@ export class EmailVerification {
         Verification.create(verification).then((createdVerification) => {
             let verificationO = <IVerification>createdVerification.toObject()
             verificationO.user = user
-            this.mailer.sendVerificationEmail(verificationO)
+            if (causedByRegistration) {
+                this.mailer.sendRegistrationMail(verificationO)
+            } else {
+                this.mailer.sendVerificationMail(verificationO)
+            }
         }).catch((err) => {
             this.logger.error(err)
         })
