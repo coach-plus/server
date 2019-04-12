@@ -32,8 +32,8 @@ export let reduceUser = (user: IUserModel, keepEmail?:Boolean): IUser => {
     let u = <IUser>user.toObject()
     if (!keepEmail) {
         delete u.email
+        delete u.emailVerified
     }
-    delete u.emailVerified
     delete u.password
     delete u.registered
     delete u.devices
