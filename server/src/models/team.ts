@@ -11,7 +11,7 @@ export interface ITeam {
 export interface ITeamModel extends ITeam, mongoose.Document { }
 
 let teamSchema = new mongoose.Schema({
-    name: { unique: true, type: String },
+    name: { unique: false, type: String },
     isPublic: Boolean,
     image: String
 })
