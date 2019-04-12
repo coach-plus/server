@@ -25,7 +25,8 @@ export class Fcm {
         const additionalPayload = { 
             category: pushRequest.category, 
             title: pushRequest.title, 
-            subtitle: pushRequest.subtitle 
+            subtitle: pushRequest.subtitle,
+            content: pushRequest.content 
         }
         let data = Object.assign(additionalPayload, pushRequest.payload) 
         data.category = pushRequest.category
