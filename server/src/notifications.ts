@@ -1,6 +1,6 @@
 import { Logger } from './logger'
 import { inject, injectable } from 'inversify'
-import { IUser, IEventModel, IDevice, Device, Membership, ITeam, ITeamModel } from './models'
+import { IUser, IEventModel, IDevice, Device, Membership, ITeam, ITeamModel, Team } from './models'
 import { IPushRequest } from './interfaces'
 import { Config } from './config'
 import { Apns } from './notifications/apns'
@@ -15,8 +15,8 @@ export class Notifications {
 
     public async sendReminder(event: IEventModel, sendingUserId:string) {
         try {
+            const team = await Team.findById(event.team)
             const memberships = await Membership.find({team:event.team})
-            .populate('team')
             .populate({
                 path:'user',
                 populate: {
@@ -35,7 +35,6 @@ export class Notifications {
             if (devices.length == 0) {
                 return
             }
-            const team = (event.team as ITeamModel)
             let pushRequest:IPushRequest = {
                 category: 'EVENT_REMINDER',
                 title: event.name,
@@ -51,7 +50,7 @@ export class Notifications {
 
             this.sendNotifications(devices, pushRequest)
         } catch(error){
-            
+            this.logger.error(error)
         }
     }
 
