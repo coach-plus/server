@@ -7,3 +7,8 @@ export * from './participation'
 export * from './device'
 export * from './invitation'
 export * from './news'
+
+export interface ITimestampable {
+    createdAt?: Date
+    updatedAt?: Date
+}

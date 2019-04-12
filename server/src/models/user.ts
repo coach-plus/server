@@ -1,8 +1,8 @@
 import * as mongoose from 'mongoose'
-import { IDevice } from './index'
+import { IDevice, ITimestampable } from './index'
 
 
-export interface IUser {
+export interface IUser extends ITimestampable {
     firstname: string
     lastname: string
     email?: string
@@ -24,7 +24,7 @@ let userSchema = new mongoose.Schema({
     registered: { type: Date, default: Date.now },
     image: String,
     devices : [{ type: mongoose.Schema.Types.ObjectId, ref: 'Device' }]
-}, { usePushEach: true })
+}, { usePushEach: true, timestamps: true })
 
 export let User = mongoose.model<IUserModel>('User', userSchema)
 

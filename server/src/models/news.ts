@@ -1,8 +1,9 @@
 import * as mongoose from 'mongoose'
 import { IUser } from './user';
 import { IEvent } from './event';
+import { ITimestampable } from '.';
 
-export interface INews {
+export interface INews extends ITimestampable {
     event: string | IEvent
     author: string | IUser
     created: Date
@@ -18,6 +19,6 @@ let newsSchema = new mongoose.Schema({
     created: { type: Date, default: Date.now },
     text: String,
     title: String
-});
+}, { timestamps: true });
 
 export let News = mongoose.model<INewsModel>('News', newsSchema)
