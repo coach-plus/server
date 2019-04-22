@@ -1,15 +1,16 @@
 import * as express from 'express'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Team, ITeam, ITeamModel, IEventModel, Event, IEvent, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser, Participation, IParticipationModel, News, INewsModel, INews, reducedUserPopulationFields } from '../models'
+import { User, Team, ITeam, ITeamModel, IEventModel, Event, IEvent, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser, Participation, IParticipationModel, News, INewsModel, INews, reducedUserPopulationFields, MembershipRole } from '../models'
 import { validate, registerUserSchema, loginUserSchema, registerTeamSchema, eventSchema, newsSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsMemberOfTeam, authenticatedUserIsCoach, isUserCoachOfTeam, authenticatedUserIsUser } from '../auth'
-import { sendError, sendSuccess } from '../api'
+import { sendError, sendSuccess, sendErrorCode } from '../api'
 import * as Uuid from 'uuid/v4'
 import { ImageManager } from "../imagemanager"
 import { Notifications } from "../notifications"
+import * as Errors from '../errors'
 
 
 @injectable()
@@ -208,7 +209,7 @@ export class TeamApi {
             }
             createdTeam = await Team.create({ name: payload.name, isPublic: payload.isPublic, image: imageName })
 
-            let membership: IMembership = { role: 'coach', team: createdTeam._id, user: req.authenticatedUser._id }
+            let membership: IMembership = { role: MembershipRole.COACH, team: createdTeam._id, user: req.authenticatedUser._id }
             const createdMembership = await Membership.create(membership)
             let populatedMembership = await Membership.findOne({ _id: createdMembership.id }).populate('team')
             populatedMembership = populatedMembership.toJSON()
@@ -268,7 +269,7 @@ export class TeamApi {
             }
             return getRoleOfUserForTeam(req.authenticatedUser._id, team._id)
                 .then(role => {
-                    if (role != 'coach') {
+                    if (role != MembershipRole.COACH) {
                         sendError(res, 400, 'user is not authorized')
                         return
                     }
@@ -306,7 +307,7 @@ export class TeamApi {
                         sendError(res, 400, 'user is already a member of the team')
                         return
                     }
-                    let membership: IMembership = { role: 'user', team: userModel.team, user: req.authenticatedUser._id }
+                    let membership: IMembership = { role: MembershipRole.USER, team: userModel.team, user: req.authenticatedUser._id }
                     return Membership.create(membership).then(() => sendSuccess(res, 201, membership))
                 })
         }).catch(error => {
@@ -329,7 +330,7 @@ export class TeamApi {
                         sendError(res, 400, 'user is already a member of the team')
                         return
                     }
-                    let membership: IMembership = { role: 'user', team: team, user: req.authenticatedUser._id }
+                    let membership: IMembership = { role: MembershipRole.USER, team: team, user: req.authenticatedUser._id }
                     return Membership.create(membership).then(() => sendSuccess(res, 201, membership))
                 })
         }).catch(error => {
@@ -344,7 +345,7 @@ export class TeamApi {
         let teamId = req.params['teamId']
         getRoleOfUserForTeam(req.authenticatedUser._id, teamId)
             .then(role => {
-                if (role != 'coach') {
+                if (role != MembershipRole.COACH) {
                     sendError(res, 400, 'user is not authorized')
                     return
                 }
@@ -353,7 +354,7 @@ export class TeamApi {
                         sendError(res, 400, 'user is not a member of the team')
                         return
                     }
-                    model.role = 'coach'
+                    model.role = MembershipRole.COACH
                     return model.save().then(() => sendSuccess(res, 200, {}))
                 })
             }).catch(error => {
@@ -492,13 +493,20 @@ export class TeamApi {
         })
     }
 
-    leaveTeam(req: Request, res: Response) {
+    async leaveTeam(req: Request, res: Response) {
         let teamId = req.params['teamId']
-        Membership.findOneAndRemove({ team: teamId, user: req.authenticatedUser._id }).then((result) => {
+        try {
+            const numberOfCoaches = await Membership.count({ team: teamId, role: MembershipRole.COACH })
+            if(numberOfCoaches < 2){
+                sendErrorCode(res, Errors.LastCoachCantLeaveTeam)
+                return
+            }
+            await Membership.findOneAndRemove({ team: teamId, user: req.authenticatedUser._id })
             sendSuccess(res, 200, {})
-        }).catch(error => {
+        }
+        catch (error) {
             this.logger.error(error)
-            sendError(res, 500, error)
-        })
+            sendErrorCode(res, Errors.InternalServerError)
+        }
     }
 }
