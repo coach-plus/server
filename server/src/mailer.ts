@@ -1,4 +1,3 @@
-import { IUserModel } from './models/user';
 import { Logger } from './logger'
 import { inject, injectable } from 'inversify'
 import { IVerification, IUser } from './models'

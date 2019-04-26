@@ -7,7 +7,6 @@ import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsCoachOfMembershipTeam, authenticatedUserIsUser, authenticatedUserIsMemberOfTeam, authenticatedUserIsMemberOfMembershipTeam } from '../auth'
 import { sendError, sendSuccess } from '../api'
-import * as Uuid from 'uuid/v4'
 
 
 @injectable()

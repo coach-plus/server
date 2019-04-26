@@ -1,6 +1,6 @@
 import { Logger } from './logger'
 import { inject, injectable } from 'inversify'
-import { IUser, IEventModel, IDevice, Device, Membership, Participation, IParticipation } from './models'
+import { IUser, IEventModel, IDevice, Device, Membership, Participation, IParticipation, Team } from './models'
 import { IPushRequest } from './interfaces'
 import { Config } from './config'
 import { Apns } from './notifications/apns'
@@ -16,6 +16,7 @@ export class Notifications {
     async sendReminder(event: IEventModel, sendingUserId:string) {
 
         try {
+
             let userIdsToBeExcluded = (await Participation.find({
                 event: event.id,
                 willAttend: { $in: [true, false] },
@@ -41,15 +42,24 @@ export class Notifications {
             if (devices.length == 0) {
                 return
             }
+
+            const team = await Team.findById(event.team)
+            if (!team) {
+                this.logger.error('Team not found')
+                return
+            }
+
             let pushRequest:IPushRequest = {
                 category: 'EVENT_REMINDER',
+                title: event.name,
+                subtitle: event.start.toDateString(), //TODO: readable date format
                 content: event.description,
                 payload: {
                     eventId: event._id.toString(),
-                    teamId: event.team.toString()
+                    teamId: team._id.toString(),
+                    teamName: team.name,
+                    eventLocation: event.location.name
                 },
-                subtitle: event.start.toDateString(), //TODO: readable date format
-                title: event.name
             }
 
             this.sendNotifications(devices, pushRequest)
