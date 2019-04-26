@@ -75,6 +75,7 @@ export class TeamApi {
         let model = <IEvent>req.body
         model.team = teamId
         Event.create(model).then(createdEvent => {
+            this.notifications.sendReminder(createdEvent, req.authenticatedUser._id)
             sendSuccess(res, 201, { event: createdEvent })
         }).catch(error => {
             this.logger.error(error)
