@@ -192,12 +192,19 @@ export class UserApi {
     async editUserInformation(req: Request, res: Response){
         try {
             const payload = req.body as { firstname: string, lastname: string, email: string }
+
+            let setObject: any = { 
+                firstname: payload.firstname, 
+                lastname: payload.lastname, 
+                email: payload.email
+            }
+
+            if (req.authenticatedUser.email !== setObject.email && setObject.email !== '') {
+                setObject.emailVerified = false
+            }
+
             const mongoUpdateOperation = { 
-                $set: { 
-                    firstname: payload.firstname, 
-                    lastname: payload.lastname, 
-                    email: payload.email
-                }
+                $set: setObject
             }
             await User.findByIdAndUpdate(req.authenticatedUser._id, mongoUpdateOperation)
             const user = await User.findById(req.authenticatedUser._id)

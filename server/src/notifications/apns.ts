@@ -27,10 +27,12 @@ export class Apns {
 
         this.apnProvider = new Provider(providerOptions)
 
+        this.logger.info('APNS provider initialized')
     }
 
     sendNotification(devices: IDevice[], pushRequest: IPushRequest) {
 
+        this.logger.info('Send notification')
         let recipients = devices.map(device => device.pushId)
 
         let notification = new Notification()

@@ -75,6 +75,7 @@ export class TeamApi {
         let model = <IEvent>req.body
         model.team = teamId
         Event.create(model).then(createdEvent => {
+            this.notifications.sendReminder(createdEvent, req.authenticatedUser._id)
             sendSuccess(res, 201, { event: createdEvent })
         }).catch(error => {
             this.logger.error(error)
@@ -486,6 +487,7 @@ export class TeamApi {
         model.event = eventId
         model.author = userId
         News.create(model).then(createdNews => {
+            this.notifications.sendNews(createdNews, req.authenticatedUser._id)
             sendSuccess(res, 201, { news: createdNews })
         }).catch(error => {
             this.logger.error(error)
