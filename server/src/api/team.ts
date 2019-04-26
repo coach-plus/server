@@ -487,6 +487,7 @@ export class TeamApi {
         model.event = eventId
         model.author = userId
         News.create(model).then(createdNews => {
+            this.notifications.sendNews(createdNews, req.authenticatedUser._id)
             sendSuccess(res, 201, { news: createdNews })
         }).catch(error => {
             this.logger.error(error)
