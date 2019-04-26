@@ -2,17 +2,19 @@ import * as express from 'express'
 import * as jwt from 'jsonwebtoken'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Verification, IUserModel, IUser, IVerificationModel, reduceUser, Device, IDevice, Membership, IMembershipModel, IMembership, ITeam, ITeamModel} from '../models'
+import { User, Verification, IUserModel,  IVerificationModel, reduceUser, Device,
+     IDevice, Membership, IMembershipModel, ITeam, ITeamModel} from '../models'
 import { validate, registerUserSchema, loginUserSchema, deviceSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware, authenticatedUserIsUser } from '../auth'
 import { EmailVerification } from '../emailverification'
-import { sendSuccess, sendError } from "../api"
+import { sendSuccess, sendError, sendErrorCode } from "../api"
 import { ImageManager } from "../imagemanager"
 import { Crypto } from "../crypto"
 import * as PasswordGenerator from 'generate-password'
-import { Mailer } from '../mailer';
+import { Mailer } from '../mailer'
+import * as Errors from '../errors'
 
 @injectable()
 export class UserApi {
@@ -269,12 +271,12 @@ export class UserApi {
 
             const user = await User.findById(userId)
             if (!user) {
-                sendError(res, 400, "user not found")
+                sendErrorCode(res, Errors.UserNotFound)
                 return
             }
 
             if (user.emailVerified === true) {
-                sendError(res, 412, "email is already verified")
+                sendErrorCode(res, Errors.EmailAlreadyVerified)
                 return
             }
 
@@ -282,7 +284,7 @@ export class UserApi {
             sendSuccess(res, 200, {})
 
         } catch(error){
-            sendError(res, 500, 'Errors occured')
+            sendErrorCode(res, Errors.InternalServerError)
         }
     }
 
