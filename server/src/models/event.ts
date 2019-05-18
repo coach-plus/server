@@ -1,7 +1,8 @@
 import * as mongoose from 'mongoose'
 import { ITeam } from './team'
+import { ITimestampable } from '.';
 
-export interface IEvent {
+export interface IEvent extends ITimestampable {
     team: string | ITeam
     name: string
     description: string
@@ -27,6 +28,6 @@ let eventSchema = new mongoose.Schema({
         lat: Number,
         long: Number
     }
-});
+}, { timestamps: true });
 
 export let Event = mongoose.model<IEventModel>('Event', eventSchema)

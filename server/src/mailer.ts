@@ -1,4 +1,3 @@
-import { IUserModel } from './models/user';
 import { Logger } from './logger'
 import { inject, injectable } from 'inversify'
 import { IVerification, IUser } from './models'
@@ -17,7 +16,7 @@ export class Mailer {
         this.appUrl = this.config.get('app_url')
     }
 
-    sendVerificationEmail(verification: IVerification) {
+    sendRegistrationMail(verification: IVerification) {
 
         let user = <IUser>verification.user
 
@@ -33,6 +32,37 @@ export class Mailer {
 
         this.sendMailRequest(mailRequest)
 
+    }
+
+    sendVerificationMail(verification: IVerification) {
+
+        let user = <IUser>verification.user
+
+        let subject = 'Please confirm your email address!'
+        let content = `Please click the following link: <a href="${this.appUrl}verification/${verification.token}">Confirm E-Mail Address</a>`
+        let to = user.email
+
+        let mailRequest: IMailRequest = {
+            html: content,
+            subject: subject,
+            to: to
+        }
+
+        this.sendMailRequest(mailRequest)
+
+    }
+
+    sendPasswordEmail(user: IUser, newPassword: string) {
+        let subject = 'Your new Password'
+        let content = `<p>Your new password is: <strong>${newPassword}</strong></p>`
+        let to = user.email
+
+        let mailRequest: IMailRequest = {
+            html: content,
+            subject: subject,
+            to: to
+        }
+        this.sendMailRequest(mailRequest)
     }
 
     private async sendMailRequest(mailRequest: IMailRequest) {

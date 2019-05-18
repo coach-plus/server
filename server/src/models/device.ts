@@ -1,12 +1,13 @@
 import * as mongoose from 'mongoose'
 import { IUser } from './user'
+import { ITimestampable } from '.';
 
 export enum System {
     Android = 'android',
     IOS = 'ios'
 }
 
-export interface IDevice {
+export interface IDevice extends ITimestampable {
     user: string | IUser
     system: System
     deviceId: string
@@ -20,6 +21,8 @@ let deviceSchema = new mongoose.Schema({
     system: String,
     deviceId: String,
     pushId: String
+}, {
+    timestamps: true
 })
 
 export let Device = mongoose.model<IDeviceModel>('Device', deviceSchema)

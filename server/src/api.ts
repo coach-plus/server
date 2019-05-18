@@ -1,11 +1,11 @@
 import * as express from 'express'
 import { Logger } from './logger'
 import { inject, injectable } from 'inversify'
-import * as User from './models'
 import { UserApi } from './api/user'
 import { TeamApi } from './api/team'
 import { MembershipApi } from './api/membership'
 import { Request, Response } from './interfaces'
+import { IError } from './errors'
 
 
 @injectable()
@@ -39,6 +39,11 @@ export let sendSuccess = (res: Response, statusCode: number, content: any, messa
     sendResponse(res, statusCode, true, content, message)
 }
 
-export let sendError = (res: Response, statusCode: number, message = '') => {
-    sendResponse(res, statusCode, false, null, message)
+
+export let sendError = (res: Response, statusCode: number, errorCode = '') => {
+    sendResponse(res, statusCode, false, null, errorCode)
+}
+
+export const sendErrorCode = (res: Response, error : IError) => {
+    sendError(res, error.statusCode, error.errorCode)
 }

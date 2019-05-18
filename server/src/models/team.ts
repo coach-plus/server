@@ -1,7 +1,8 @@
 import * as mongoose from 'mongoose'
+import { ITimestampable } from '.';
 
 
-export interface ITeam {
+export interface ITeam extends ITimestampable {
     name: string
     isPublic: boolean
     image: string
@@ -11,9 +12,11 @@ export interface ITeam {
 export interface ITeamModel extends ITeam, mongoose.Document { }
 
 let teamSchema = new mongoose.Schema({
-    name: { unique: true, type: String },
+    name: { unique: false, type: String },
     isPublic: Boolean,
     image: String
+}, {
+    timestamps: true
 })
 
 export let Team = mongoose.model<ITeamModel>('Team', teamSchema)

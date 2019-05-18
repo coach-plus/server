@@ -5,9 +5,8 @@ import { User, Team, ITeam, ITeamModel, Verification, IUserModel, IUser, Invitat
 import { validate, registerUserSchema, loginUserSchema, registerTeamSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
-import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsCoachOfMembershipTeam, authenticatedUserIsUser } from '../auth'
+import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsCoachOfMembershipTeam, authenticatedUserIsUser, authenticatedUserIsMemberOfTeam, authenticatedUserIsMemberOfMembershipTeam } from '../auth'
 import { sendError, sendSuccess } from '../api'
-import * as Uuid from 'uuid/v4'
 
 
 @injectable()
@@ -20,6 +19,7 @@ export class MembershipApi {
         let router = express.Router()
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/my', this.getMyMemberships.bind(this))
+        router.get('/:membershipId', authenticatedUserIsMemberOfMembershipTeam, this.getMembershipById.bind(this))
         router.put('/:membershipId/role', authenticatedUserIsCoachOfMembershipTeam, this.setRole.bind(this))
         router.delete('/:membershipId', authenticatedUserIsCoachOfMembershipTeam, this.removeUserFromTeam.bind(this))
         return router
@@ -32,7 +32,7 @@ export class MembershipApi {
                     if (!membership.team) {
                         return membership
                     }
-                    return Membership.count({team: (<ITeamModel>membership.team)._id}).then(count => {
+                    return this.getMemberCount(membership).then(count => {
                         membership = membership.toJSON()
                         if (membership.team) {
                             (<ITeam>membership.team).memberCount = count
@@ -41,11 +41,43 @@ export class MembershipApi {
                     })
                 }))
             })
-            .then(memberships => sendSuccess(res, 200, { memberships: memberships }))
+            .then(memberships => {
+                const sortedMemberships = memberships.sort((a, b) => {
+                    if ((a.team as ITeam).name > (b.team as ITeam).name) {
+                        return 1;
+                    } else if ((a.team as ITeam).name < (b.team as ITeam).name) {
+                        return -1;
+                    }
+                    return 0;
+                })
+                sendSuccess(res, 200, { memberships: sortedMemberships })
+            })
             .catch(error => {
                 sendError(res, 500, 'internal server error')
                 this.logger.error(error)
             })
+    }
+    
+    async getMembershipById(req: Request, res: Response) {
+        let membershipId = req.params['membershipId']
+        if (!membershipId) {
+            sendError(res, 404, 'membership not found')
+            return
+        }
+
+        try {
+            const membership: IMembership = (await Membership.findById(membershipId).populate('team').exec()).toJSON()
+            const team = membership.team as ITeam
+            team.memberCount = await this.getMemberCount(membership)
+            sendSuccess(res, 200, { membership: membership })
+        } catch (e) {
+            this.logger.error(e)
+            sendError(res, 500, 'internal server error')
+        }
+    }
+
+    async getMemberCount(membership: IMembership) {
+        return await Membership.count({team: (<ITeamModel>membership.team)._id})
     }
 
     setRole(req: Request, res:Response) {

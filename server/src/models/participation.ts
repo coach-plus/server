@@ -1,8 +1,9 @@
 import * as mongoose from 'mongoose'
 import { IUser } from './user'
+import { ITimestampable } from '.';
 
 
-export interface IParticipation {
+export interface IParticipation extends ITimestampable {
     user: string | IUser
     event: string
     willAttend: boolean
@@ -16,6 +17,6 @@ let participationSchema = new mongoose.Schema({
     event: { type: mongoose.SchemaTypes.ObjectId, ref: 'Event' },
     willAttend: Boolean,
     didAttend: Boolean
-})
+}, { timestamps: true })
 
 export let Participation = mongoose.model<IParticipationModel>('Participation', participationSchema)

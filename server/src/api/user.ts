@@ -2,22 +2,26 @@ import * as express from 'express'
 import * as jwt from 'jsonwebtoken'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Verification, IUserModel, IUser, IVerificationModel, reduceUser, Device, IDevice, Membership, IMembershipModel, IMembership, ITeam, ITeamModel} from '../models'
+import { User, Verification, IUserModel,  IVerificationModel, reduceUser, Device,
+     IDevice, Membership, IMembershipModel, ITeam, ITeamModel} from '../models'
 import { validate, registerUserSchema, loginUserSchema, deviceSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware, authenticatedUserIsUser } from '../auth'
 import { EmailVerification } from '../emailverification'
-import { sendSuccess, sendError } from "../api"
+import { sendSuccess, sendError, sendErrorCode } from "../api"
 import { ImageManager } from "../imagemanager"
 import { Crypto } from "../crypto"
+import * as PasswordGenerator from 'generate-password'
+import { Mailer } from '../mailer'
+import * as Errors from '../errors'
 
 @injectable()
 export class UserApi {
 
     constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config,
         @inject(EmailVerification) private emailverification: EmailVerification,
-        @inject(ImageManager) private imageManager: ImageManager) {
+        @inject(ImageManager) private imageManager: ImageManager, @inject(Mailer) private mailer: Mailer) {
     }
 
     getRouter() {
@@ -25,11 +29,13 @@ export class UserApi {
         router.post('/register', this.register.bind(this))
         router.post('/login', this.login.bind(this))
         router.post('/verification/:token', this.verifyEmail.bind(this))
+        router.put('/password', this.resetPassword.bind(this))
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/me', this.getMyUser.bind(this))
         router.put('/me/information',this.editUserInformation.bind(this))
         router.put('/me/image',this.editUserImage.bind(this))
         router.put('/me/password',this.changeUserPassword.bind(this))
+        router.post('/me/verification', this.resendVerificationEmail.bind(this))
 
         router.get('/:userId/memberships',this.getMemberships.bind(this))
         router.post('/:userId/devices', authenticatedUserIsUser('userId'), this.registerDevice.bind(this))
@@ -65,7 +71,7 @@ export class UserApi {
                 res.status(400).send(result)
                 return
             }
-            const createdUser: IUserModel = await User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname })
+            const createdUser: IUserModel = await User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname, emailVerified: false })
             const token = this.createJWT(createdUser)
             const result: IApiResponse = {
                 success: true,
@@ -75,7 +81,7 @@ export class UserApi {
                 }
             }
             res.status(201).send(result)
-            this.emailverification.create(createdUser)
+            this.emailverification.create(createdUser, true)
         }
         catch(error){
             this.logger.error(error)
@@ -186,12 +192,19 @@ export class UserApi {
     async editUserInformation(req: Request, res: Response){
         try {
             const payload = req.body as { firstname: string, lastname: string, email: string }
+
+            let setObject: any = { 
+                firstname: payload.firstname, 
+                lastname: payload.lastname, 
+                email: payload.email
+            }
+
+            if (req.authenticatedUser.email !== setObject.email && setObject.email !== '') {
+                setObject.emailVerified = false
+            }
+
             const mongoUpdateOperation = { 
-                $set: { 
-                    firstname: payload.firstname, 
-                    lastname: payload.lastname, 
-                    email: payload.email
-                }
+                $set: setObject
             }
             await User.findByIdAndUpdate(req.authenticatedUser._id, mongoUpdateOperation)
             const user = await User.findById(req.authenticatedUser._id)
@@ -226,6 +239,59 @@ export class UserApi {
         }
         catch(error){
             sendError(res, 500, 'Errors occured')
+        }
+    }
+
+    async resetPassword(req: Request, res: Response){
+        try{
+            let payload = req.body as { email: string }
+            if (!payload.email){
+                sendError(res, 400, "email address is required")
+                return
+            }
+            const user = await User.findOne({ email: payload.email })
+
+            if (!user) {
+                sendError(res, 404, "user not found")
+                return
+            }
+
+            const newPassword = PasswordGenerator.generate({
+                excludeSimilarCharacters: true,
+                length: 12,
+                numbers: true
+            })
+            
+            const newPasswordEncrypted = await Crypto.encryptPassword(newPassword)
+            await User.findByIdAndUpdate(user._id, { $set : { password: newPasswordEncrypted }})
+            this.mailer.sendPasswordEmail(user, newPassword)
+            sendSuccess(res, 200, {})
+        }
+        catch(error){
+            sendError(res, 500, 'Errors occured')
+        }
+    }
+
+    async resendVerificationEmail(req: Request, res: Response) {
+        try{
+            let userId = req.authenticatedUser._id
+
+            const user = await User.findById(userId)
+            if (!user) {
+                sendErrorCode(res, Errors.UserNotFound)
+                return
+            }
+
+            if (user.emailVerified === true) {
+                sendErrorCode(res, Errors.EmailAlreadyVerified)
+                return
+            }
+
+            await this.emailverification.create(user, false)
+            sendSuccess(res, 200, {})
+
+        } catch(error){
+            sendErrorCode(res, Errors.InternalServerError)
         }
     }
 
