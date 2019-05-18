@@ -286,9 +286,10 @@ export class TeamApi {
     }
 
 
-    joinPrivateTeam(req: Request, res: Response) {
-        let token = req.params['token']
-        Invitation.findOne({ token: token }).then(invitationModel => {
+    async joinPrivateTeam(req: Request, res: Response) {
+        const token = req.params['token']
+        const invitationModel = await Invitation.findOne({ token: token })
+        try {
             if (invitationModel == null) {
                 sendError(res, 404, 'the token is not valid')
                 return
@@ -297,21 +298,20 @@ export class TeamApi {
                 sendError(res, 400, 'the token is no longer valid')
                 return
             }
-            return Membership.findOne({ user: req.authenticatedUser._id, team: invitationModel.team }).populate('team')
-                .then(userModel => {
-                    if (userModel != null) {
-                        sendError(res, 400, 'user is already a member of the team')
-                        return
-                    }
-                    let membership: IMembership = { role: 'user', team: userModel.team, user: req.authenticatedUser._id }
-                    return Membership.create(membership).then(() => sendSuccess(res, 201, membership))
-                })
-        }).catch(error => {
+            const existingMembership = await Membership.findOne({ user: req.authenticatedUser._id, team: invitationModel.team }).populate('team')
+            if (existingMembership != null) {
+                sendError(res, 400, 'user is already a member of the team')
+                return
+            }
+            const membership: IMembership = { role: 'user', team: invitationModel.team, user: req.authenticatedUser._id }
+            await Membership.create(membership)
+            sendSuccess(res, 201, membership)
+        }
+        catch (error) {
             sendError(res, 500, 'internal server error')
             this.logger.error(error)
-        })
+        }
     }
-
 
     joinPublicTeam(req: Request, res: Response) {
         let teamId = req.params['teamId']
