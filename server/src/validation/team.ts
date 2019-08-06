@@ -2,7 +2,8 @@ export let registerTeamSchema = {
     properties: {
         name: {
             type: 'string',
-            required: true
+            required: true,
+            minLength: 3
         },
         isPublic: {
             type: 'boolean',
@@ -19,7 +20,8 @@ export let eventSchema = {
     properties: {
         name: {
             type: 'string',
-            required: true
+            required: true,
+            minLength: 3
         },
         start: {
             type: 'string',
