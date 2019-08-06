@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Http, Headers, Response } from '@angular/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable, Observer } from 'rxjs';
 import 'rxjs/add/operator/map';
 
@@ -18,7 +18,7 @@ export class RegisterComponent implements OnInit {
     passwordRepeat: null
   }
 
-  constructor(private http: Http) { }
+  constructor(private http: HttpClient) { }
 
   ngOnInit() {
   }

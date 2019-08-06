@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Http, Headers, Response } from '@angular/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable, Observer } from 'rxjs';
 import 'rxjs/add/operator/map';
 
@@ -16,7 +16,7 @@ export class VerificationComponent implements OnInit, OnDestroy {
   token: string
   verified: boolean
 
-  constructor(private route: ActivatedRoute, private http: Http) { }
+  constructor(private route: ActivatedRoute, private http: HttpClient) { }
 
   ngOnInit() {
     this.sub = this.route.params.subscribe(params => {

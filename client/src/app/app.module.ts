@@ -3,11 +3,13 @@ import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { RouterModule, Routes } from '@angular/router';
+import { HttpClientModule } from '@angular/common/http';
 
 import { AppComponent } from './app.component';
 import { RegisterComponent } from './register/register.component';
 import { VerificationComponent } from './verification/verification.component';
 import { RedirectComponent } from './redirect/redirect.component';
+import { HomeComponent } from './home/home.component';
 
 const appRoutes: Routes = [
   {
@@ -20,6 +22,10 @@ const appRoutes: Routes = [
   {
     path: 'teams/:public/join/:token',
     component: RedirectComponent
+  },
+  {
+    path: '**',
+    component: HomeComponent
   }
 ];
 
@@ -28,7 +34,8 @@ const appRoutes: Routes = [
     AppComponent,
     RegisterComponent,
     VerificationComponent,
-    RedirectComponent
+    RedirectComponent,
+    HomeComponent
   ],
   imports: [
     BrowserModule,
