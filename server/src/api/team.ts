@@ -293,8 +293,13 @@ export class TeamApi {
 
     async joinPrivateTeam(req: Request, res: Response) {
         const token = req.params['token']
-        const invitationModel = await Invitation.findOne({ token: token })
+        const result = await Invitation.find({ token: token}).populate('team').exec()
         try {
+            if (!result || !result.length || result.length != 1) {
+                sendError(res, 404, 'the token is not valid')
+                return
+            }
+            const invitationModel = result[0]
             if (invitationModel == null) {
                 sendError(res, 404, 'the token is not valid')
                 return
