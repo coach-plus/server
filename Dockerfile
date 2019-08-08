@@ -1,4 +1,4 @@
-FROM node:8.15-alpine
+FROM node:10.16-alpine
 RUN mkdir /app
 WORKDIR /app
 RUN apk --no-cache add --virtual native-deps \
@@ -11,7 +11,7 @@ RUN cd client && npm install && cd ..
 RUN cd server && npm run build && cd ..
 RUN cd client && ./node_modules/.bin/ng build
 
-FROM node:8.15-alpine
+FROM node:10.16-alpine
 RUN mkdir /app
 WORKDIR /app
 COPY --from=0 /app .
