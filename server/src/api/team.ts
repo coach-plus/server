@@ -1,16 +1,16 @@
 import * as express from 'express'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Team, ITeam, ITeamModel, IEventModel, Event, IEvent, Verification, IUserModel, IUser, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser, Participation, IParticipationModel, News, INewsModel, INews, reducedUserPopulationFields, MembershipRole } from '../models'
-import { validate, registerUserSchema, loginUserSchema, registerTeamSchema, eventSchema, newsSchema } from '../validation'
+import { Team, ITeam, ITeamModel, Event, IEvent, IUserModel, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser, Participation, IParticipationModel, News, INews, reducedUserPopulationFields, MembershipRole } from '../models'
+import { validate, registerTeamSchema, eventSchema, newsSchema } from '../validation'
 import { Config } from '../config'
-import { Request, Response, IApiResponse } from '../interfaces'
-import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsMemberOfTeam, authenticatedUserIsCoach, isUserCoachOfTeam, authenticatedUserIsUser } from '../auth'
-import { sendError, sendSuccess, sendErrorCode } from '../api'
+import { Request, Response } from '../interfaces'
+import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsMemberOfTeam, authenticatedUserIsCoach, authenticatedUserIsUser } from '../auth'
+import { sendError, sendSuccess, sendErrorCode, sendSuccessCode } from '../api'
 import * as Uuid from 'uuid/v4'
 import { ImageManager } from "../imagemanager"
 import { Notifications } from "../notifications"
-import * as Errors from '../errors'
+import * as ResponseCodes from '../responseCodes'
 
 
 @injectable()
@@ -376,19 +376,19 @@ export class TeamApi {
         let willAttend = req.body.willAttend
         Event.findOne({ _id: eventId }).then(event => {
             if (event == null) {
-                sendError(res, 404, 'event not found')
+                sendErrorCode(res, ResponseCodes.EventNotFound)
                 return
             }
             if (event.start.getTime() < new Date().getTime()) {
-                sendError(res, 400, 'event has already started')
+                sendErrorCode(res, ResponseCodes.EventAlreadyStarted)
                 return
             }
             return Participation.findOneAndUpdate({ event: eventId, user: userId }, { $set: { willAttend: willAttend } }, { upsert: true, new: true })
                 .then(result => {
-                    sendSuccess(res, 200, result)
+                    sendSuccessCode(res, result, ResponseCodes.ParticipationUpdated)
                 })
         }).catch(error => {
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, ResponseCodes.InternalServerError)
             this.logger.error(error)
         })
     }
@@ -419,44 +419,9 @@ export class TeamApi {
 
     getParticipations(req: Request, res: Response) {
         let teamId = req.params.teamId
-        let userId = req.params.userId
         let eventId = req.params.eventId
         let participationList: { user: IUserModel, participation: IParticipationModel }[] = []
 
-        const participation =
-
-            Promise.all([
-                Membership.find({ team: teamId }).populate('user', reducedUserPopulationFields).exec(),
-                Participation.find({ event: eventId }).exec()
-            ]).then(result => {
-                let memberships = result[0]
-                let participation = result[1]
-                let participationMap = new Map<string, IParticipationModel>()
-                participation.forEach(participation => {
-                    participationMap.set('' + <string>participation.user, participation)
-                })
-                memberships.forEach(membership => {
-                    let key = '' + (<IUserModel>membership.user)._id
-                    let participation = participationMap.get(key) || null
-                    participationList.push({
-                        user: <IUserModel>membership.user,
-                        participation: participation
-                    })
-                })
-
-                participationList = participationList.sort((p1, p2) => {
-                    if (p1.user.id === req.authenticatedUser._id) {
-                        return -1
-                    } else if (p2.user.id === req.authenticatedUser._id) {
-                        return 1
-                    } else if (p1.user.lastname < p2.user.lastname) {
-                        return -1
-                    } else {
-                        return 1
-                    }
-                })
-                sendSuccess(res, 200, { participation: participationList })
-            })
     }
 
 
@@ -505,7 +470,7 @@ export class TeamApi {
         try {
             const numberOfCoaches = await Membership.count({ team: teamId, role: MembershipRole.COACH })
             if(numberOfCoaches < 2){
-                sendErrorCode(res, Errors.LastCoachCantLeaveTeam)
+                sendErrorCode(res, ResponseCodes.LastCoachCantLeaveTeam)
                 return
             }
             await Membership.findOneAndRemove({ team: teamId, user: req.authenticatedUser._id })
@@ -513,7 +478,7 @@ export class TeamApi {
         }
         catch (error) {
             this.logger.error(error)
-            sendErrorCode(res, Errors.InternalServerError)
+            sendErrorCode(res, ResponseCodes.InternalServerError)
         }
     }
 }
