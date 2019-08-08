@@ -1,11 +1,18 @@
 import * as express from 'express'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { Team, ITeam, ITeamModel, Event, IEvent, IUserModel, Invitation, IInvitation, Membership, IMembership, IInvitationModel, reduceUser, Participation, IParticipationModel, News, INews, reducedUserPopulationFields, MembershipRole } from '../models'
+import {
+    Team, ITeam, ITeamModel, Event, IEvent, IUserModel, Invitation,
+    IInvitation, Membership, IMembership, IInvitationModel, reduceUser, Participation,
+    IParticipationModel, News, INews, reducedUserPopulationFields, MembershipRole
+} from '../models'
 import { validate, registerTeamSchema, eventSchema, newsSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response } from '../interfaces'
-import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsMemberOfTeam, authenticatedUserIsCoach, authenticatedUserIsUser } from '../auth'
+import {
+    authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsMemberOfTeam,
+    authenticatedUserIsCoach, authenticatedUserIsUser
+} from '../auth'
 import { sendError, sendSuccess, sendErrorCode, sendSuccessCode } from '../api'
 import * as Uuid from 'uuid/v4'
 import { ImageManager } from "../imagemanager"
@@ -293,7 +300,7 @@ export class TeamApi {
 
     async joinPrivateTeam(req: Request, res: Response) {
         const token = req.params['token']
-        const result = await Invitation.find({ token: token}).populate('team').exec()
+        const result = await Invitation.find({ token: token }).populate('team').exec()
         try {
             if (!result || !result.length || result.length != 1) {
                 sendError(res, 404, 'the token is not valid')
@@ -417,11 +424,48 @@ export class TeamApi {
         })
     }
 
-    getParticipations(req: Request, res: Response) {
-        let teamId = req.params.teamId
-        let eventId = req.params.eventId
-        let participationList: { user: IUserModel, participation: IParticipationModel }[] = []
+    async getParticipations(req: Request, res: Response) {
+        try {
+            let teamId = req.params.teamId
+            let eventId = req.params.eventId
+            let participationList: { user: IUserModel, participation: IParticipationModel }[] = []
 
+            const result = await Promise.all([
+                Membership.find({ team: teamId }).populate('user', reducedUserPopulationFields).exec(),
+                Participation.find({ event: eventId }).exec()
+            ])
+
+            let memberships = result[0]
+            let participation = result[1]
+            let participationMap = new Map<string, IParticipationModel>()
+            participation.forEach(participation => {
+                participationMap.set('' + <string>participation.user, participation)
+            })
+            memberships.forEach(membership => {
+                let key = '' + (<IUserModel>membership.user)._id
+                let participation = participationMap.get(key) || null
+                participationList.push({
+                    user: <IUserModel>membership.user,
+                    participation: participation
+                })
+            })
+
+            participationList = participationList.sort((p1, p2) => {
+                if (p1.user.id === req.authenticatedUser._id) {
+                    return -1
+                } else if (p2.user.id === req.authenticatedUser._id) {
+                    return 1
+                } else if (p1.user.lastname < p2.user.lastname) {
+                    return -1
+                } else {
+                    return 1
+                }
+            })
+            sendSuccess(res, 200, { participation: participationList })
+
+        } catch (error) {
+            sendErrorCode(res, ResponseCodes.InternalServerError)
+        }
     }
 
 
@@ -469,7 +513,7 @@ export class TeamApi {
         let teamId = req.params['teamId']
         try {
             const numberOfCoaches = await Membership.count({ team: teamId, role: MembershipRole.COACH })
-            if(numberOfCoaches < 2){
+            if (numberOfCoaches < 2) {
                 sendErrorCode(res, ResponseCodes.LastCoachCantLeaveTeam)
                 return
             }
