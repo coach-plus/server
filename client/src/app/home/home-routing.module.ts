@@ -9,8 +9,8 @@ const routes: Routes = [
     path: '',
     component: HomeComponent,
     data: {
-      title: 'Home | Chatloop Angular 8 Landing Page',
-      content: 'Chatloop Angular 8 landing page with Angular Universal | SSR | SEO friendly'
+      title: 'Coach+',
+      content: 'Sei nicht nur Coach, sei Coach+'
     }
   }
 ];
