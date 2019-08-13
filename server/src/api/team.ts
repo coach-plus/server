@@ -30,6 +30,7 @@ export class TeamApi {
 
     getRouter() {
         let router = express.Router()
+        router.get('/:teamId', this.getPublicTeamById.bind(this))
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/my', this.getMyTeams.bind(this))
         router.post('/register', this.register.bind(this))
@@ -61,6 +62,23 @@ export class TeamApi {
         router.use('/:teamId/events/:eventId/news', newsRouter);
 
         return router
+    }
+
+    async getPublicTeamById(req: Request, res: Response) {
+        try {
+            let teamId = req.params['teamId']
+            console.log(teamId)
+            const team = await Team.find({ _id: teamId, isPublic: true })
+            console.log(team)
+            if (!team || !team.length || team.length < 1) {
+                sendErrorCode(res, ResponseCodes.TeamNotFound)
+                return
+            }
+            sendSuccess(res, 200, team[0])
+        } catch (error) {
+            this.logger.error(error)
+            sendErrorCode(res, InternalServerError)
+        }
     }
 
     getEvents(req: Request, res: Response) {

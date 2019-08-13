@@ -9,7 +9,7 @@ const routes: Routes = [
     path: 'verification',
     component: VerificationComponent,
   }, {
-    path: 'teams/:public/join/:token',
+    path: 'teams/:mode/join/:tokenOrTeamId',
     component: RedirectComponent
   }
 ];

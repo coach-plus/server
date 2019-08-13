@@ -15,6 +15,7 @@ import { ImageManager } from "./imagemanager";
 import { Notifications } from "./notifications";
 import { Apns } from './notifications/apns';
 import { Fcm } from './notifications/fcm';
+import { InvitationsApi } from './api/invitations';
 
 // use ES6 Promise for mongoose
 (<any>mongoose).Promise = global.Promise
@@ -29,6 +30,7 @@ container.bind<Api>(Api).toSelf().inSingletonScope()
 container.bind<UserApi>(UserApi).toSelf().inSingletonScope()
 container.bind<TeamApi>(TeamApi).toSelf().inSingletonScope()
 container.bind<MembershipApi>(MembershipApi).toSelf().inSingletonScope()
+container.bind<InvitationsApi>(InvitationsApi).toSelf().inSingletonScope()
 
 container.bind<Sites>(Sites).toSelf().inSingletonScope()
 

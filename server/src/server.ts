@@ -23,6 +23,9 @@ export class Server {
         let server = http.createServer(app);
         app.use(bodyParser.json({ limit: '100mb' }));
 
+        const uploadsPath = __dirname + '/../../uploads'
+        console.log(uploadsPath)
+
         let hbs = exphbs.create({
             extname: '.hbs',
             layoutsDir: `${__dirname}/../views/layouts/`,
@@ -39,7 +42,7 @@ export class Server {
         app.use('/static', express.static(__dirname + '/../../client/static'));
         app.use('/api', this.api.getRouter());
         app.use('/static', express.static(__dirname + '/../static'))
-        app.use('/uploads', express.static(__dirname + '/../../uploads'))
+        app.use('/uploads', express.static(uploadsPath))
         app.get('/apple-app-site-association', (req, res) => {
             fs.readFile(__dirname + '/../assets/apple-app-site-association', (err, data) => {
                 res.contentType('application/json')

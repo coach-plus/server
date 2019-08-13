@@ -1,5 +1,35 @@
 <app-page name="Team beitreten">
-  <div class="">
-    <a class="btn btn-primary" [href]="url">Join Team</a>
+  <div class="row team">
+    <div *ngIf="team" class="col-lg-12">
+      <div class="row">
+        <div class="col-lg-12">
+          <h2>{{team.name}}</h2>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-lg-12">
+          <img [src]="'uploads/' + team.image" class="img-responsive" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-lg-12 button">
+          <a class="btn btn-primary" [href]="url">{{team.name}} beitreten</a>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="loading" class="col-lg-12">
+      <div class="row">
+        <div class="col-lg-12">
+          <h2>Lade..</h2>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="error" class="col-lg-12">
+      <div class="row">
+        <div class="col-lg-12">
+          <h2>{{error}}</h2>
+        </div>
+      </div>
+    </div>
   </div>
 </app-page>

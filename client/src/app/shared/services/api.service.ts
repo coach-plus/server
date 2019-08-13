@@ -15,5 +15,13 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/users/verification/${token}`, {});
   }
 
+  public getInvitation(token: string) {
+    return this.http.get(`${this.baseUrl}/invitations/${token}`);
+  }
+
+  public getPublicTeam(teamId: string) {
+    return this.http.get(`${this.baseUrl}/teams/${teamId}`);
+  }
+
 
 }
