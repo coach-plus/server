@@ -18,7 +18,7 @@ import * as Uuid from 'uuid/v4'
 import { ImageManager } from "../imagemanager"
 import { Notifications } from "../notifications"
 import * as ResponseCodes from '../responseCodes'
-import { InternalServerError, EventNotFound, Unauthorized, TeamAlreadyExists, JoinTokenNotValid, UserAlreadyMember, EventNotStartedYet } from '../responseCodes';
+import { InternalServerError, EventNotFound, Unauthorized, TeamAlreadyExists, JoinTokenNotValid, UserAlreadyMember, EventNotStartedYet, MembershipNotFound } from '../responseCodes';
 
 
 @injectable()
@@ -487,9 +487,15 @@ export class TeamApi {
 
     async leaveTeam(req: Request, res: Response) {
         let teamId = req.params['teamId']
+
         try {
+            const ownMembership = await Membership.findOne({ team: teamId, user: req.authenticatedUser._id })
+            if (!ownMembership) {
+                sendErrorCode(res, MembershipNotFound)
+                return
+            }
             const numberOfCoaches = await Membership.count({ team: teamId, role: MembershipRole.COACH })
-            if (numberOfCoaches < 2) {
+            if (ownMembership.role === MembershipRole.COACH && numberOfCoaches == 1) {
                 sendErrorCode(res, ResponseCodes.LastCoachCantLeaveTeam)
                 return
             }
