@@ -6,7 +6,8 @@ import { validate, registerUserSchema, loginUserSchema, registerTeamSchema } fro
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
 import { authenticationMiddleware, getRoleOfUserForTeam, authenticatedUserIsCoachOfMembershipTeam, authenticatedUserIsUser, authenticatedUserIsMemberOfTeam, authenticatedUserIsMemberOfMembershipTeam } from '../auth'
-import { sendError, sendSuccess } from '../api'
+import { sendError, sendSuccess, sendSuccessCode, sendErrorCode } from '../api'
+import { RoleUpdated, MembershipNotFound, InternalServerError, RoleInvalid, UserRemoved } from '../responseCodes';
 
 
 @injectable()
@@ -61,7 +62,7 @@ export class MembershipApi {
     async getMembershipById(req: Request, res: Response) {
         let membershipId = req.params['membershipId']
         if (!membershipId) {
-            sendError(res, 404, 'membership not found')
+            sendErrorCode(res, MembershipNotFound)
             return
         }
 
@@ -72,7 +73,7 @@ export class MembershipApi {
             sendSuccess(res, 200, { membership: membership })
         } catch (e) {
             this.logger.error(e)
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, InternalServerError)
         }
     }
 
@@ -85,16 +86,16 @@ export class MembershipApi {
         let role = req.body.role || 'coach'
 
         if (role != 'coach' && role != 'user') {
-            sendError(res, 400, 'Invalid role')
+            sendErrorCode(res, RoleInvalid)
             return
         }
         Membership.findById(membershipId).then(membership => {
             membership.role = role
             membership.save().then(() => {
-                sendSuccess(res, 200, '')
+                sendSuccessCode(res, {}, RoleUpdated)
             })
         }).catch(error => {
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, InternalServerError)
             this.logger.error(error)
         })
     }
@@ -103,10 +104,10 @@ export class MembershipApi {
         try {
             let membershipId = req.params['membershipId']
             await Membership.findByIdAndRemove(membershipId)
-            sendSuccess(res, 200, {})
+            sendSuccessCode(res, {}, UserRemoved)
         } catch (error) {
             this.logger.error(error)
-            sendError(res, 500, error)
+            sendErrorCode(res, InternalServerError)
         }
     }
 }

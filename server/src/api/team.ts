@@ -18,6 +18,7 @@ import * as Uuid from 'uuid/v4'
 import { ImageManager } from "../imagemanager"
 import { Notifications } from "../notifications"
 import * as ResponseCodes from '../responseCodes'
+import { InternalServerError, EventNotFound, Unauthorized, TeamAlreadyExists, JoinTokenNotValid, UserAlreadyMember, EventNotStartedYet } from '../responseCodes';
 
 
 @injectable()
@@ -34,15 +35,11 @@ export class TeamApi {
         router.post('/register', this.register.bind(this))
         router.post('/private/join/:token', this.joinPrivateTeam.bind(this))
         router.post('/public/join/:teamId', this.joinPublicTeam.bind(this))
-        router.put('/:teamId/coaches/:userId', this.promoteUser.bind(this))
         router.get('/:teamId/members', this.getTeamMembers.bind(this))
         router.delete('/:teamId/memberships', this.leaveTeam.bind(this))
         router.post('/:teamId/invite', this.invite.bind(this))
         router.put('/:teamId', this.editTeam.bind(this))
         router.delete('/:teamId', authenticatedUserIsCoach, this.deleteTeam.bind(this))
-
-        // todo leave team
-        // todo delete team ?
 
         let eventRouter = express.Router({ mergeParams: true })
         eventRouter.use(authenticatedUserIsMemberOfTeam)
@@ -72,7 +69,7 @@ export class TeamApi {
             sendSuccess(res, 200, { events: events })
         }).catch(error => {
             this.logger.error(error)
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, InternalServerError)
         })
     }
 
@@ -83,10 +80,10 @@ export class TeamApi {
         model.team = teamId
         Event.create(model).then(createdEvent => {
             this.notifications.sendReminder(createdEvent, req.authenticatedUser._id)
-            sendSuccess(res, 201, { event: createdEvent })
+            sendSuccessCode(res, { event: createdEvent }, ResponseCodes.EventCreated)
         }).catch(error => {
             this.logger.error(error)
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, InternalServerError)
         })
     }
 
@@ -94,10 +91,10 @@ export class TeamApi {
         let eventId = req.params['eventId']
         let teamId = req.params['teamId']
         Event.findOneAndRemove({ _id: eventId, team: teamId }).then(() => {
-            sendSuccess(res, 200, {})
+            sendSuccessCode(res, {}, ResponseCodes.EventDeleted)
         }).catch(error => {
             this.logger.error(error)
-            sendError(res, 500, error)
+            sendErrorCode(res, InternalServerError)
         })
     }
 
@@ -107,9 +104,10 @@ export class TeamApi {
         try {
             await Membership.deleteMany({ team: teamId })
             await Team.findByIdAndRemove(teamId)
-            sendSuccess(res, 200, {})
+            sendSuccessCode(res, {}, ResponseCodes.TeamDeleted)
         } catch (e) {
-            sendError(res, 500, e)
+            this.logger.error(e)
+            sendErrorCode(res, InternalServerError)
         }
     }
 
@@ -120,13 +118,13 @@ export class TeamApi {
         Event.findOneAndUpdate({ _id: eventId, team: teamId }, model, { new: true })
             .then(updatedEvent => {
                 if (updatedEvent == null) {
-                    sendError(res, 404, 'not found')
+                    sendErrorCode(res, EventNotFound)
                     return
                 }
-                sendSuccess(res, 200, { event: updatedEvent })
+                sendSuccessCode(res, { event: updatedEvent }, ResponseCodes.EventUpdated)
             }).catch(error => {
                 this.logger.error(error)
-                sendError(res, 500, 'internal server error')
+                sendErrorCode(res, InternalServerError)
             })
     }
 
@@ -134,9 +132,10 @@ export class TeamApi {
         let eventId = req.params['eventId']
         Event.findById(eventId).then(event => {
             this.notifications.sendReminder(event, req.authenticatedUser._id)
-            sendSuccess(res, 200, {})
+            sendSuccessCode(res, {}, ResponseCodes.ReminderSent)
         }).catch(err => {
-            sendError(res, 500, err)
+            this.logger.error(err)
+            sendErrorCode(res, InternalServerError)
         })
     }
 
@@ -145,13 +144,13 @@ export class TeamApi {
         let eventId = req.params['eventId']
         Event.findOne({ _id: eventId, team: teamId }).then(event => {
             if (event == null) {
-                sendError(res, 404, 'not found')
+                sendErrorCode(res, EventNotFound)
                 return
             }
             sendSuccess(res, 200, { event: event })
         }).catch(error => {
             this.logger.error(error)
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, InternalServerError)
         })
     }
 
@@ -160,7 +159,7 @@ export class TeamApi {
         Membership.findOne({ user: req.authenticatedUser._id, team: teamId })
             .then(userModel => {
                 if (userModel == null) {
-                    sendError(res, 401, 'user is not a member of the team')
+                    sendErrorCode(res, Unauthorized)
                     return
                 }
                 return Membership.find({ team: teamId }).populate('user').exec()
@@ -182,7 +181,7 @@ export class TeamApi {
                         })))
                     .then(members => sendSuccess(res, 200, { members: members }))
             }).catch(error => {
-                sendError(res, 500, 'internal server error')
+                sendErrorCode(res, InternalServerError)
                 this.logger.error(error)
             })
     }
@@ -192,7 +191,7 @@ export class TeamApi {
             .then(memberships => memberships.map(membership => membership.team))
             .then(teams => sendSuccess(res, 200, { teams: teams }))
             .catch(error => {
-                sendError(res, 500, 'internal server error')
+                sendErrorCode(res, InternalServerError)
                 this.logger.error(error)
             })
     }
@@ -206,7 +205,7 @@ export class TeamApi {
             if (payload.isPublic) {
                 const existingTeam = await Team.findOne({ name: payload.name, isPublic: true })
                 if (existingTeam != null) {
-                    sendError(res, 400, 'team does already exist')
+                    sendErrorCode(res, TeamAlreadyExists)
                     return
                 }
             }
@@ -223,11 +222,11 @@ export class TeamApi {
             populatedMembership = populatedMembership.toJSON()
             const team = populatedMembership.team as ITeam
             team.memberCount = 1
-            sendSuccess(res, 201, populatedMembership)
+            sendSuccessCode(res, populatedMembership, ResponseCodes.UserRegistered)
         }
         catch (error) {
             this.logger.error(error)
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, InternalServerError)
         }
     }
 
@@ -250,10 +249,11 @@ export class TeamApi {
             await Team.findByIdAndUpdate(teamId, updateTeam)
 
             const team = await Team.findById(teamId)
-            sendSuccess(res, 200, team)
+            sendSuccessCode(res, team, ResponseCodes.UpdatedTeam)
         }
         catch (error) {
-            sendError(res, 500, 'Errors occurred')
+            this.logger.error(error)
+            sendErrorCode(res, InternalServerError)
         }
     }
 
@@ -267,7 +267,7 @@ export class TeamApi {
         Team.findOne({ _id: teamId }).then(model => {
             team = model
             if (model == null) {
-                sendError(res, 404, 'team does not exist')
+                sendErrorCode(res, ResponseCodes.TeamNotFound)
                 return
             }
             if (team.isPublic) {
@@ -278,7 +278,7 @@ export class TeamApi {
             return getRoleOfUserForTeam(req.authenticatedUser._id, team._id)
                 .then(role => {
                     if (role != MembershipRole.COACH) {
-                        sendError(res, 400, 'user is not authorized')
+                        sendErrorCode(res, Unauthorized)
                         return
                     }
                     let today = new Date()
@@ -292,7 +292,7 @@ export class TeamApi {
                     })
                 })
         }).catch(error => {
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, InternalServerError)
             this.logger.error(error)
         })
     }
@@ -308,25 +308,25 @@ export class TeamApi {
             }
             const invitationModel = result[0]
             if (invitationModel == null) {
-                sendError(res, 404, 'the token is not valid')
+                sendErrorCode(res, JoinTokenNotValid)
                 return
             }
             if (invitationModel.validUntil.getTime() < Date.now()) {
-                sendError(res, 400, 'the token is no longer valid')
+                sendErrorCode(res, JoinTokenNotValid)
                 return
             }
             const existingMembership = await Membership.findOne({ user: req.authenticatedUser._id, team: invitationModel.team }).populate('team')
             if (existingMembership != null) {
-                sendError(res, 400, 'user is already a member of the team')
+                sendErrorCode(res, UserAlreadyMember)
                 return
             }
             const membership: IMembership = { role: MembershipRole.USER, team: invitationModel.team, user: req.authenticatedUser._id }
             await Membership.create(membership)
-            sendSuccess(res, 201, membership)
+            sendSuccessCode(res, membership, ResponseCodes.TeamJoined)
         }
         catch (error) {
-            sendError(res, 500, 'internal server error')
             this.logger.error(error)
+            sendErrorCode(res, InternalServerError)
         }
     }
 
@@ -334,46 +334,22 @@ export class TeamApi {
         let teamId = req.params['teamId']
         Team.findOne({ _id: teamId }).then(team => {
             if (team == null || !team.isPublic) {
-                sendError(res, 404, 'team does not exist or is not public')
+                sendErrorCode(res, ResponseCodes.TeamNotFound)
                 return
             }
             return Membership.findOne({ user: req.authenticatedUser._id, team: teamId })
                 .then(userModel => {
                     if (userModel != null) {
-                        sendError(res, 400, 'user is already a member of the team')
+                        sendErrorCode(res, UserAlreadyMember)
                         return
                     }
                     let membership: IMembership = { role: MembershipRole.USER, team: team, user: req.authenticatedUser._id }
-                    return Membership.create(membership).then(() => sendSuccess(res, 201, membership))
+                    return Membership.create(membership).then(() => sendSuccessCode(res, membership, ResponseCodes.TeamJoined))
                 })
         }).catch(error => {
-            sendError(res, 500, 'internal server error')
             this.logger.error(error)
+            sendErrorCode(res, InternalServerError)
         })
-    }
-
-
-    promoteUser(req: Request, res: Response) {
-        let userId = req.params['userId']
-        let teamId = req.params['teamId']
-        getRoleOfUserForTeam(req.authenticatedUser._id, teamId)
-            .then(role => {
-                if (role != MembershipRole.COACH) {
-                    sendError(res, 400, 'user is not authorized')
-                    return
-                }
-                return Membership.findOne({ user: userId, team: teamId }).then(model => {
-                    if (model == null) {
-                        sendError(res, 400, 'user is not a member of the team')
-                        return
-                    }
-                    model.role = MembershipRole.COACH
-                    return model.save().then(() => sendSuccess(res, 200, {}))
-                })
-            }).catch(error => {
-                sendError(res, 500, 'internal server error')
-                this.logger.error(error)
-            })
     }
 
     // TODO validate body
@@ -407,11 +383,11 @@ export class TeamApi {
 
         Event.findOne({ _id: eventId }).then(event => {
             if (event == null) {
-                sendError(res, 404, 'event not found')
+                sendErrorCode(res, EventNotFound)
                 return
             }
             if (event.start.getTime() > new Date().getTime()) {
-                sendError(res, 400, 'event hasn\'t started yet')
+                sendErrorCode(res, EventNotStartedYet)
                 return
             }
             return Participation.findOneAndUpdate({ event: eventId, user: userId }, { $set: { didAttend: didAttend } }, { upsert: true, new: true })
@@ -419,8 +395,8 @@ export class TeamApi {
                     sendSuccess(res, 200, result)
                 })
         }).catch(error => {
-            sendError(res, 500, 'internal server error')
             this.logger.error(error)
+            sendErrorCode(res, InternalServerError)
         })
     }
 
@@ -479,17 +455,17 @@ export class TeamApi {
             sendSuccess(res, 200, { news: news })
         }).catch(error => {
             this.logger.error(error)
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, InternalServerError)
         })
     }
 
     deleteNews(req: Request, res: Response) {
         let newsId = req.params['newsId']
         News.findOneAndRemove({ _id: newsId }).then(() => {
-            sendSuccess(res, 200, {})
+            sendSuccessCode(res, {}, ResponseCodes.AnnouncementDeleted)
         }).catch(error => {
             this.logger.error(error)
-            sendError(res, 500, error)
+            sendErrorCode(res, InternalServerError)
         })
     }
 
@@ -502,10 +478,10 @@ export class TeamApi {
         model.author = userId
         News.create(model).then(createdNews => {
             this.notifications.sendNews(createdNews, req.authenticatedUser._id)
-            sendSuccess(res, 201, { news: createdNews })
+            sendSuccessCode(res, { news: createdNews }, ResponseCodes.AnnouncementCreated)
         }).catch(error => {
             this.logger.error(error)
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, InternalServerError)
         })
     }
 
@@ -518,7 +494,7 @@ export class TeamApi {
                 return
             }
             await Membership.findOneAndRemove({ team: teamId, user: req.authenticatedUser._id })
-            sendSuccess(res, 200, {})
+            sendSuccessCode(res, {}, ResponseCodes.LeftTeam)
         }
         catch (error) {
             this.logger.error(error)

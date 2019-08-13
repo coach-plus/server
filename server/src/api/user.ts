@@ -15,6 +15,7 @@ import { Crypto } from "../crypto"
 import * as PasswordGenerator from 'generate-password'
 import { Mailer } from '../mailer'
 import * as Errors from '../responseCodes'
+import { InternalServerError, EmailAlreadyRegistered, CredentialsAreNotCorrect, VerificationTokenNotFound, ImageIsMissing, OldNewAndRepeatPasswordsRequired, WrongPassword, NewPasswordsDoNotMatch, EmailRequired, UserNotFound } from '../responseCodes';
 
 @injectable()
 export class UserApi {
@@ -48,7 +49,7 @@ export class UserApi {
             sendSuccess(res, 200, { user: reduceUser(user, true) })
         } catch (error) {
             this.logger.error(error)
-            sendError(res, 500)
+            sendErrorCode(res, InternalServerError)
         }
         
     }
@@ -64,11 +65,7 @@ export class UserApi {
             const hashedPassword = await Crypto.encryptPassword(password)
             const userModel = await User.findOne({ email: payload.email })
             if (userModel != null) {
-                const result: IApiResponse = {
-                    success: false,
-                    message: 'email address is already registered'
-                }
-                res.status(400).send(result)
+                sendErrorCode(res, EmailAlreadyRegistered)
                 return
             }
             const createdUser: IUserModel = await User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname, emailVerified: false })
@@ -85,12 +82,7 @@ export class UserApi {
         }
         catch(error){
             this.logger.error(error)
-                    const result: IApiResponse = {
-                        success: false,
-                        message: 'internal error'
-                    }
-                    res.status(500).send(result)
-            sendError(res, 500, "internal error")
+            sendErrorCode(res, InternalServerError)
         }
     }
 
@@ -102,11 +94,7 @@ export class UserApi {
         this.checkUserCrendentials(email, password).then(user => {
             let token = this.createJWT(user)
             if (!token) {
-                let result: IApiResponse = {
-                    success: false,
-                    message: 'internal error'
-                }
-                res.status(500).send(result)
+                sendErrorCode(res, InternalServerError)
                 return
             }
             let result: IApiResponse = {
@@ -118,33 +106,22 @@ export class UserApi {
             }
             res.status(200).send(result)
         }).catch((error) => {
-            let result: IApiResponse = {
-                success: false,
-                message: 'credentials are not correct'
-            }
-            res.status(400).send(result)
+            this.logger.error(error)
+            sendErrorCode(res, CredentialsAreNotCorrect)
         })
     }
 
     verifyEmail(req: Request, res: Response) {
         let token = req.params.token
         if (!token) {
-            let result: IApiResponse = {
-                success: false,
-                message: 'Not found'
-            }
-            res.status(404).send(result)
+            sendErrorCode(res, VerificationTokenNotFound)
             return
         }
 
         Verification.findOne({ token: token }).populate('user').exec()
             .then((verification: IVerificationModel) => {
                 if (!verification) {
-                    let result: IApiResponse = {
-                        success: false,
-                        message: 'Not found'
-                    }
-                    res.status(404).send(result)
+                    sendErrorCode(res, VerificationTokenNotFound)
                     return
                 }
 
@@ -161,11 +138,7 @@ export class UserApi {
                     })
             }).catch((err) => {
                 this.logger.error(err)
-                let result: IApiResponse = {
-                    success: false,
-                    message: 'Internal error'
-                }
-                res.status(500).send(result)
+                sendErrorCode(res, InternalServerError)
             })
     }
 
@@ -181,11 +154,12 @@ export class UserApi {
                 sendSuccess(res, 200, reduceUser(user, true))
             }
             else {
-                sendError(res, 400, "image is missing in payload")
+                sendErrorCode(res, ImageIsMissing)
             }
         }
         catch(error){
-            sendError(res, 500, 'Errors occured')
+            this.logger.error(error)
+            sendErrorCode(res, InternalServerError)
         }
     }
 
@@ -212,7 +186,8 @@ export class UserApi {
             sendSuccess(res, 200, { user : myReducedUser })
         }
         catch(error) {
-            sendError(res, 500, 'Errors occured')
+            this.logger.error(error)
+            sendErrorCode(res, InternalServerError)
         }
     }
 
@@ -220,17 +195,17 @@ export class UserApi {
         try{
             let payload = req.body as { oldPassword: string, newPassword: string, newPasswordRepeat: string }
             if(!payload.oldPassword || !payload.newPassword || !payload.newPasswordRepeat){
-                sendError(res, 400, "oldPassword, newPassword & newPasswordRepeat are required")
+                sendErrorCode(res, OldNewAndRepeatPasswordsRequired)
                 return
             }
             if(payload.newPassword !== payload.newPasswordRepeat){
-                sendError(res, 400, "new passwords don't match each other")
+                sendErrorCode(res, NewPasswordsDoNotMatch)
                 return
             }
             const user = await User.findOne({ _id: req.authenticatedUser._id })
             const isOldPasswordCorrect = await Crypto.comparePassword(payload.oldPassword, user.password)
             if(!isOldPasswordCorrect){
-                sendError(res, 400, "wrong password")
+                sendErrorCode(res, WrongPassword)
                 return
             }
             const newPassword = await Crypto.encryptPassword(payload.newPassword)
@@ -238,7 +213,8 @@ export class UserApi {
             sendSuccess(res, 200, {})
         }
         catch(error){
-            sendError(res, 500, 'Errors occured')
+            this.logger.error(error)
+            sendErrorCode(res, InternalServerError)
         }
     }
 
@@ -246,13 +222,13 @@ export class UserApi {
         try{
             let payload = req.body as { email: string }
             if (!payload.email){
-                sendError(res, 400, "email address is required")
+                sendErrorCode(res, EmailRequired)
                 return
             }
             const user = await User.findOne({ email: payload.email })
 
             if (!user) {
-                sendError(res, 404, "user not found")
+                sendErrorCode(res, UserNotFound)
                 return
             }
 
@@ -268,7 +244,8 @@ export class UserApi {
             sendSuccess(res, 200, {})
         }
         catch(error){
-            sendError(res, 500, 'Errors occured')
+            this.logger.error(error)
+            sendErrorCode(res, InternalServerError)
         }
     }
 
@@ -291,6 +268,7 @@ export class UserApi {
             sendSuccess(res, 200, {})
 
         } catch(error){
+            this.logger.error(error)
             sendErrorCode(res, Errors.InternalServerError)
         }
     }
@@ -316,7 +294,8 @@ export class UserApi {
             }
         }
         catch(error){
-            sendError(res, 500, error)
+            this.logger.error(error)
+            sendErrorCode(res, InternalServerError)
         }
     }
 
@@ -362,8 +341,8 @@ export class UserApi {
                     })
                 }
             }).catch(error => {
-                sendError(res, 500, 'internal server error')
                 this.logger.error(error)
+                sendErrorCode(res, InternalServerError)
             })
     }
 
