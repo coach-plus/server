@@ -3,7 +3,7 @@ import * as jwt from 'jsonwebtoken'
 import { Membership } from './models'
 import { Request, Response, IApiResponse } from './interfaces'
 import { sendError, sendSuccess, sendErrorCode } from './api'
-import { Unauthenticated, Unauthorized, InternalServerError, UserNotACoach } from './responseCodes';
+import { Unauthenticated, Unauthorized, InternalServerError, UserNotACoach, MembershipNotFound } from './responseCodes';
 
 
 
@@ -66,6 +66,10 @@ export let authenticatedUserIsCoachOfMembershipTeam = (req: Request, res: Respon
 export let authenticatedUserIsMemberOfMembershipTeam = (req: Request, res: Response, next: Function) => {
     let membershipId = req.params['membershipId']
     Membership.findById(membershipId).then(changeMembership => {
+        if (!changeMembership) {
+            sendErrorCode(res, MembershipNotFound)
+            return
+        }
         Membership.findOne({ team: changeMembership.team, user: req.authenticatedUser._id })
         .then(membership => {
             if (membership != null) {
