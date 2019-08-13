@@ -14,7 +14,7 @@ import { ImageManager } from "../imagemanager"
 import { Crypto } from "../crypto"
 import * as PasswordGenerator from 'generate-password'
 import { Mailer } from '../mailer'
-import * as Errors from '../errors'
+import * as Errors from '../responseCodes'
 
 @injectable()
 export class UserApi {
