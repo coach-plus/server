@@ -6,6 +6,7 @@ export interface IResponseCode {
 }
 
 // generic errors
+export const Unauthenticated : IResponseCode = { message: 'Unauthenticated', statusCode: HttpStatus.UNAUTHORIZED }
 export const Unauthorized : IResponseCode =  { message: 'Unauthorized', statusCode: HttpStatus.FORBIDDEN }
 export const InternalServerError : IResponseCode =  { message: 'Internal_server_error', statusCode: HttpStatus.INTERNAL_SERVER_ERROR }
 
@@ -25,6 +26,7 @@ export const RoleInvalid : IResponseCode =  { message: 'The_role_is_invalid', st
 export const TeamAlreadyExists : IResponseCode =  { message: 'The_team_already_exists', statusCode: HttpStatus.BAD_REQUEST }
 export const JoinTokenNotValid : IResponseCode =  { message: 'The_token_is_not_valid', statusCode: HttpStatus.NOT_FOUND }
 export const UserAlreadyMember : IResponseCode =  { message: 'The_user_is_already_member_of_this_team', statusCode: HttpStatus.BAD_REQUEST }
+export const UserNotACoach : IResponseCode =  { message: 'The_user_is_not_a_coach_of_this_team', statusCode: HttpStatus.PRECONDITION_FAILED }
 export const CredentialsAreNotCorrect : IResponseCode =  { message: 'The_credentials_are_not_correct', statusCode: HttpStatus.BAD_REQUEST }
 export const VerificationTokenNotFound : IResponseCode =  { message: 'The_verification_token_could_not_be_found', statusCode: HttpStatus.BAD_REQUEST }
 export const OldNewAndRepeatPasswordsRequired : IResponseCode =  { message: 'Old_password_new_password_and_password_repeat_are_required', statusCode: HttpStatus.BAD_REQUEST }

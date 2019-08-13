@@ -2,7 +2,8 @@ import * as express from 'express'
 import * as jwt from 'jsonwebtoken'
 import { Membership } from './models'
 import { Request, Response, IApiResponse } from './interfaces'
-import { sendError, sendSuccess } from './api'
+import { sendError, sendSuccess, sendErrorCode } from './api'
+import { Unauthenticated, Unauthorized, InternalServerError, UserNotACoach } from './responseCodes';
 
 
 
@@ -16,9 +17,7 @@ export let authenticationMiddleware = (jwtSecret: string) => {
             });
             return
         }
-        return res.status(403).send({
-            error: 'please provide a valid token'
-        })
+        sendErrorCode(res, Unauthenticated)
     }
 }
 
@@ -38,12 +37,12 @@ export let authenticatedUserIsMemberOfTeam = (req: Request, res: Response, next:
     Membership.findOne({ user: req.authenticatedUser._id, team: teamId })
         .then(userModel => {
             if (userModel == null) {
-                sendError(res, 401, 'user is not a member of the team')
+                sendErrorCode(res, Unauthorized)
                 return
             }
             next()
         }).catch(error => {
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, InternalServerError)
         })
 }
 
@@ -55,11 +54,11 @@ export let authenticatedUserIsCoachOfMembershipTeam = (req: Request, res: Respon
             if (membership != null && membership.role == 'coach') {
                 next()
             } else {
-                sendError(res, 401, 'user is not a coach of the team')
+                sendErrorCode(res, UserNotACoach)
                 return
             }
         }).catch(error => {
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, InternalServerError)
         })
     })
 }
@@ -72,11 +71,11 @@ export let authenticatedUserIsMemberOfMembershipTeam = (req: Request, res: Respo
             if (membership != null) {
                 next()
             } else {
-                sendError(res, 401, 'user is not a member of the team')
+                sendErrorCode(res, UserNotACoach)
                 return
             }
         }).catch(error => {
-            sendError(res, 500, 'internal server error')
+            sendErrorCode(res, InternalServerError)
         })
     })
 }
@@ -88,9 +87,9 @@ export let authenticatedUserIsCoach = (req: Request, res: Response, next: Functi
             next()
             return
         }
-        sendError(res, 401, 'user is not authorized')
+        sendErrorCode(res, UserNotACoach)
     }).catch(error => {
-        sendError(res, 500, 'internal server error')
+        sendErrorCode(res, InternalServerError)
     })
 }
 
@@ -101,7 +100,7 @@ export let authenticatedUserIsUser = (userIdParameter: string) => {
             next()
             return
         }
-        sendError(res, 401, 'user is not authorized')
+        sendErrorCode(res, Unauthenticated)
     }
 }
 
