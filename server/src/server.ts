@@ -35,8 +35,8 @@ export class Server {
         app.set('view engine', '.hbs')
 
         // app.use('/app/register', express.static(__dirname + '/../../client/dist/'));
-        app.use('/app', express.static(__dirname + '/../../client/dist/'));
-        app.use('/app/*', express.static(__dirname + '/../../client/dist/'));
+        app.use('/app', express.static(__dirname + '/../../client/dist/browser'));
+        app.use('/app/*', express.static(__dirname + '/../../client/dist/browser'));
         app.use('/static', express.static(__dirname + '/../../client/static'));
         app.use('/api', this.api.getRouter());
         app.use('/static', express.static(__dirname + '/../static'))
