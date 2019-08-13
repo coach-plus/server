@@ -5,10 +5,12 @@ import { IPushRequest } from './interfaces'
 import { Config } from './config'
 import { Apns } from './notifications/apns'
 import { Fcm } from './notifications/fcm'
-
+import * as moment from 'moment'
 
 @injectable()
 export class Notifications {
+
+    private dateTimeFormat = 'dd, DD.MM.YY HH:mm'
 
     constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config, 
     @inject(Apns) private apns: Apns, @inject(Fcm) private fcm: Fcm) { }
@@ -52,7 +54,7 @@ export class Notifications {
             let pushRequest:IPushRequest = {
                 category: 'EVENT_REMINDER',
                 title: event.name,
-                subtitle: event.start.toDateString(), //TODO: readable date format
+                subtitle: moment(event.start).format(this.dateTimeFormat),
                 content: event.description,
                 payload: {
                     eventId: event._id.toString(),
