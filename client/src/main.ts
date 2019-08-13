@@ -1,12 +1,19 @@
-import './polyfills.ts';
+import  './polyfills';
 
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import './assets/pace/pace.min.js';
+import './assets/js/loader-scripts.js';
+
 import { enableProdMode } from '@angular/core';
-import { environment } from './environments/environment';
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+
 import { AppModule } from './app/app.module';
+import { environment } from './environments/environment';
 
 if (environment.production) {
   enableProdMode();
 }
 
-platformBrowserDynamic().bootstrapModule(AppModule);
+document.addEventListener('DOMContentLoaded', () => {
+  platformBrowserDynamic().bootstrapModule(AppModule)
+  .catch(err => console.log(err));
+});

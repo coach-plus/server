@@ -1,47 +1,27 @@
-import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-
-import { RouterModule, Routes } from '@angular/router';
-import { HttpClientModule } from '@angular/common/http';
-
+import { RouterModule } from '@angular/router';
+import { BrowserModule } from '@angular/platform-browser';
+import { Http, HttpModule } from '@angular/http';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { SharedModule } from "./shared/shared.module";
+import { rootRouterConfig } from './app.routes';
 import { AppComponent } from './app.component';
-import { RegisterComponent } from './register/register.component';
-import { VerificationComponent } from './verification/verification.component';
-import { RedirectComponent } from './redirect/redirect.component';
-import { HomeComponent } from './home/home.component';
-
-const appRoutes: Routes = [
-  {
-    path: 'register', component: RegisterComponent
-  },
-  {
-    path: 'verification/:token',
-    component: VerificationComponent
-  },
-  {
-    path: 'teams/:public/join/:token',
-    component: RedirectComponent
-  },
-  {
-    path: '**',
-    component: HomeComponent
-  }
-];
+import { DemoComponent } from './demo/demo.component';
+import { BlogComponent } from './blog/blog.component';
+import * as $ from 'jquery';
 
 @NgModule({
   declarations: [
     AppComponent,
-    RegisterComponent,
-    VerificationComponent,
-    RedirectComponent,
-    HomeComponent
+    DemoComponent,
+    BlogComponent
   ],
   imports: [
-    BrowserModule,
-    FormsModule,
-    HttpClientModule,
-    RouterModule.forRoot(appRoutes)
+    BrowserModule.withServerTransition({ appId: 'serverApp' }),
+    HttpModule,
+    BrowserAnimationsModule,
+    SharedModule,
+    RouterModule.forRoot(rootRouterConfig, { useHash: false, anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' })
   ],
   providers: [],
   bootstrap: [AppComponent]
