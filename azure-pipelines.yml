@@ -22,3 +22,7 @@ steps:
     docker push $imageName:$(tag)
     docker push $imageName:latest
   displayName: 'build & publish docker image'
+- task: PublishPipelineArtifact@0
+  inputs:
+    artifactName: 'deployment'
+    targetPath: './deploy'
