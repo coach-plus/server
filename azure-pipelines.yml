@@ -1,0 +1,21 @@
+# Docker
+# Build a Docker image 
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- master
+
+resources:
+- repo: self
+
+variables:
+  tag: '$(Build.BuildId)'
+steps:
+- script: |
+    docker build -t mathandoro/coach-plus-server:$(tag) .
+    docker login -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD)
+    docker push mathandoro/coach-plus-server:$(tag)
+    docker push mathandoro/coach-plus-server:latest
+  env:
+    DOCKER_USERNAME: $(DOCKER_USERNAME) 
+    DOCKER_PASSWORD: ${DOCKER_PASSWORD}
