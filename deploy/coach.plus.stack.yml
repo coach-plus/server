@@ -1,0 +1,30 @@
+version: '3.3'
+
+services:
+  coach-plus-server:
+    image: mathandoro/coach-plus-server:{{version}}
+    deploy:
+      labels:
+        - "traefik.docker.network=traefik"
+        - "traefik.frontend.rule=Host:coach.plus"
+        - "traefik.port=5200"
+    configs:
+      - source: coach.plus.env.json
+        target: /app/server/.env.json
+      - source: apns.key
+        target: /app/server/apnsKey.p8
+    networks:
+      - traefik
+      - mongo
+    volumes:
+      - /data/coach.plus/uploads:/app/uploads
+networks:
+  traefik:
+    external: true
+  mongo:
+    external: true
+configs:
+  coach.plus.env.json:
+    external: true
+  apns.key:
+    external: true
