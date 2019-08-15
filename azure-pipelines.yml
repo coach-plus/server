@@ -17,6 +17,8 @@ steps:
     command: login
     containerRegistry: DockerHub
 - script: |
-    docker build -t mathandoro/coach-plus-server:$(tag) .
-    docker push mathandoro/coach-plus-server:$(tag)
-    docker push mathandoro/coach-plus-server:latest
+    export imageName="mathandoro/coach-plus-server"
+    docker build -t $imageName:$(tag) -t $imageName:latest .
+    docker push $imageName:$(tag)
+    docker push $imageName:latest
+  displayName: 'build & publish docker image'
