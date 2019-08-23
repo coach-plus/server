@@ -43,6 +43,16 @@ export let registerUserSchema = {
         email: {
             type: 'string',
             required: true
+        },
+        termsAccepted: {
+            type: 'boolean',
+            const: true,
+            required: true,
+        },
+        dataPrivacyAccepted: {
+            type: 'boolean',
+            const: true,
+            required: true,
         }
     }
 }

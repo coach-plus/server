@@ -24,7 +24,6 @@ export class Server {
         app.use(bodyParser.json({ limit: '100mb' }));
 
         const uploadsPath = __dirname + '/../../uploads'
-        console.log(uploadsPath)
 
         let hbs = exphbs.create({
             extname: '.hbs',

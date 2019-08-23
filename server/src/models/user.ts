@@ -10,6 +10,8 @@ export interface IUser extends ITimestampable {
     emailVerified?: boolean
     registered?: Date
     image: string
+    termsAccepted?: boolean
+    dataPrivacyAccepted?: boolean
     devices: IDevice[]
 }
 
@@ -23,6 +25,8 @@ let userSchema = new mongoose.Schema({
     emailVerified: { type: Boolean, default: false },
     registered: { type: Date, default: Date.now },
     image: String,
+    termsAccepted: { type: Boolean, default: false },
+    dataPrivacyAccepted: { type: Boolean, default: false },
     devices : [{ type: mongoose.Schema.Types.ObjectId, ref: 'Device' }]
 }, { usePushEach: true, timestamps: true })
 
@@ -37,6 +41,8 @@ export let reduceUser = (user: IUserModel, keepEmail?:Boolean): IUser => {
     delete u.password
     delete u.registered
     delete u.devices
+    delete u.termsAccepted
+    delete u.dataPrivacyAccepted
     return u
 }
 

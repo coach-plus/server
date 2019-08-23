@@ -61,6 +61,8 @@ export class UserApi {
         const password = payload.password
         const firstname = payload.firstname
         const lastname = payload.lastname
+        const termsAccepted = payload.termsAccepted
+        const dataPrivacyAccepted = payload.dataPrivacyAccepted
         try{
             const hashedPassword = await Crypto.encryptPassword(password)
             const userModel = await User.findOne({ email: payload.email })
@@ -68,7 +70,7 @@ export class UserApi {
                 sendErrorCode(res, EmailAlreadyRegistered)
                 return
             }
-            const createdUser: IUserModel = await User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname, emailVerified: false })
+            const createdUser: IUserModel = await User.create({ email: email, password: hashedPassword, firstname: firstname, lastname: lastname, emailVerified: false, termsAccepted: termsAccepted, dataPrivacyAccepted: dataPrivacyAccepted })
             const token = this.createJWT(createdUser)
             const result: IApiResponse = {
                 success: true,
