@@ -9,7 +9,7 @@ services:
         - "traefik.frontend.rule=Host:dev.coach.plus"
         - "traefik.port=5200"
     configs:
-      - source: dev.coach.plus.env.json
+      - source: dev.coach.plus.env.json_v2
         target: /app/server/.env.json
       - source: apns.key
         target: /app/server/apnsKey.p8
@@ -24,7 +24,7 @@ networks:
   mongo:
     external: true
 configs:
-  dev.coach.plus.env.json:
+  dev.coach.plus.env.json_v2:
     external: true
   apns.key:
     external: true
