@@ -9,7 +9,7 @@ services:
         - "traefik.frontend.rule=Host:beta.coach.plus"
         - "traefik.port=5200"
     configs:
-      - source: beta.coach.plus.env.json_v2
+      - source: beta.coach.plus.env.json_v3
         target: /app/server/.env.json
       - source: apns.key
         target: /app/server/apnsKey.p8
@@ -28,7 +28,7 @@ networks:
 configs:
   beta.coach.plus.apple-app-site-association_v2:
     external: true
-  beta.coach.plus.env.json_v2:
+  beta.coach.plus.env.json_v3:
     external: true
   apns.key:
     external: true
