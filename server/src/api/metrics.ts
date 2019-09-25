@@ -20,7 +20,7 @@ export class MetricsApi {
     }
 
     async getMetrics(req: Request, res: Response) {
-        if(req.header('authorization') !== this.config.get('monitoring_token', Math.random().toString(36).substr(2, 5))){
+        if(req.header('authorization') !== 'Bearer ' + this.config.get('monitoring_token', Math.random().toString(36).substr(2, 5))){
             res.status(403).send('unauthorized')
             return
         }
