@@ -19,6 +19,8 @@ import { ContactUsComponent } from './contact-us/contact-us.component';
 import { FaqComponent } from './faq/faq.component';
 import { DownloadComponent } from './download/download.component';
 import { NewsLetterComponent } from './news-letter/news-letter.component';
+import { TermsOfUseComponent } from './terms-of-use/terms-of-use.component';
+import { DataPrivacyComponent } from './data-privacy/data-privacy.component';
 
 @NgModule({
   imports: [
@@ -43,7 +45,9 @@ import { NewsLetterComponent } from './news-letter/news-letter.component';
     ContactUsComponent,
     FaqComponent,
     DownloadComponent,
-    NewsLetterComponent
+    NewsLetterComponent,
+    TermsOfUseComponent,
+    DataPrivacyComponent
   ]
 })
 export class HomeModule { }

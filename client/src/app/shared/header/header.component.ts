@@ -10,7 +10,8 @@ declare var $: any;
 })
 export class HeaderComponent implements OnInit {
 
-  public; @Input() showMenu = true;
+  @Input() public showMenu = true;
+  @Input() public showDarkHeader = false;
 
   public darkHeader = false;
   public menuItems: any[];

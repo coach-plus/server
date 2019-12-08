@@ -2,6 +2,8 @@ import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 
 import { HomeComponent } from './home.component';
+import { TermsOfUseComponent } from './terms-of-use/terms-of-use.component';
+import { DataPrivacyComponent } from './data-privacy/data-privacy.component';
 
 // Routes
 const routes: Routes = [
@@ -11,6 +13,22 @@ const routes: Routes = [
     data: {
       title: 'Coach+',
       content: 'Sei nicht nur Coach, sei Coach+'
+    }
+  },
+  {
+    path: 'terms-of-use',
+    component: TermsOfUseComponent,
+    data: {
+      title: 'Coach+',
+      content: 'Nutzungsbedingungen'
+    }
+  },
+  {
+    path: 'data-privacy',
+    component: DataPrivacyComponent,
+    data: {
+      title: 'Coach+',
+      content: 'Datenschutz'
     }
   }
 ];

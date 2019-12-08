@@ -1,5 +1,5 @@
 <!--Nav start-->
-<nav class="navbar navbar-expand-lg  theme-nav fixed-top" [class.darkHeader]="darkHeader">
+<nav class="navbar navbar-expand-lg  theme-nav fixed-top" [class.darkHeader]="darkHeader || showDarkHeader">
   <div class="container">
     <a class="navbar-brand" [routerLink]="'/'"><h1 class="app-title">Coach+</h1></a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#mainmenu" aria-expanded="false" aria-label="Toggle navigation">
@@ -8,7 +8,7 @@
     <div class="collapse navbar-collapse" id="mainmenu">
       <ul class="navbar-nav ml-auto" id="mymenu">
         <li class="nav-item ">
-          <a class="nav-link" href="#home" [pageScrollOffset]="75" pageScroll>Home</a>
+          <a class="nav-link" [routerLink]="" [pageScrollOffset]="75" pageScroll>Home</a>
         </li>
         <!--
         <li class="nav-item">
