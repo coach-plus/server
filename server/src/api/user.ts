@@ -2,8 +2,10 @@ import * as express from 'express'
 import * as jwt from 'jsonwebtoken'
 import { Logger } from '../logger'
 import { inject, injectable } from 'inversify'
-import { User, Verification, IUserModel,  IVerificationModel, reduceUser, Device,
-     IDevice, Membership, IMembershipModel, ITeam, ITeamModel} from '../models'
+import {
+    User, Verification, IUserModel, IVerificationModel, reduceUser, Device,
+    IDevice, Membership, IMembershipModel, ITeam, ITeamModel
+} from '../models'
 import { validate, registerUserSchema, loginUserSchema, deviceSchema } from '../validation'
 import { Config } from '../config'
 import { Request, Response, IApiResponse } from '../interfaces'
@@ -20,7 +22,7 @@ import { InternalServerError, EmailAlreadyRegistered, CredentialsAreNotCorrect, 
 @injectable()
 export class UserApi {
 
-    constructor( @inject(Logger) private logger: Logger, @inject(Config) private config: Config,
+    constructor(@inject(Logger) private logger: Logger, @inject(Config) private config: Config,
         @inject(EmailVerification) private emailverification: EmailVerification,
         @inject(ImageManager) private imageManager: ImageManager, @inject(Mailer) private mailer: Mailer) {
     }
@@ -33,25 +35,25 @@ export class UserApi {
         router.put('/password', this.resetPassword.bind(this))
         router.use(authenticationMiddleware(this.config.get('jwt_secret')))
         router.get('/me', this.getMyUser.bind(this))
-        router.put('/me/information',this.editUserInformation.bind(this))
-        router.put('/me/image',this.editUserImage.bind(this))
-        router.put('/me/password',this.changeUserPassword.bind(this))
+        router.put('/me/information', this.editUserInformation.bind(this))
+        router.put('/me/image', this.editUserImage.bind(this))
+        router.put('/me/password', this.changeUserPassword.bind(this))
         router.post('/me/verification', this.resendVerificationEmail.bind(this))
 
-        router.get('/:userId/memberships',this.getMemberships.bind(this))
+        router.get('/:userId/memberships', this.getMemberships.bind(this))
         router.post('/:userId/devices', authenticatedUserIsUser('userId'), this.registerDevice.bind(this))
         return router
     }
 
     async getMyUser(req: Request, res: Response) {
         try {
-            const user = await User.findOne({_id: req.authenticatedUser._id})
+            const user = await User.findOne({ _id: req.authenticatedUser._id })
             sendSuccess(res, 200, { user: reduceUser(user, true) })
         } catch (error) {
             this.logger.error(error)
             sendErrorCode(res, InternalServerError)
         }
-        
+
     }
 
     @validate(registerUserSchema)
@@ -63,7 +65,7 @@ export class UserApi {
         const lastname = payload.lastname
         const termsAccepted = payload.termsAccepted
         const dataPrivacyAccepted = payload.dataPrivacyAccepted
-        try{
+        try {
             const hashedPassword = await Crypto.encryptPassword(password)
             const userModel = await User.findOne({ email: payload.email })
             if (userModel != null) {
@@ -82,7 +84,7 @@ export class UserApi {
             res.status(201).send(result)
             this.emailverification.create(createdUser, true)
         }
-        catch(error){
+        catch (error) {
             this.logger.error(error)
             sendErrorCode(res, InternalServerError)
         }
@@ -90,10 +92,20 @@ export class UserApi {
 
 
     @validate(loginUserSchema)
-    login(req: Request, res: Response) {
+    async login(req: Request, res: Response) {
         let email = req.body.email;
         let password = req.body.password;
-        this.checkUserCrendentials(email, password).then(user => {
+        try {
+            const user = await User.findOne({ email: email })
+            if (user == null) {
+                sendErrorCode(res, UserNotFound)
+                return
+            }
+            const isPasswordCorrect = await this.checkUserCrendentials(email, user)
+            if (!isPasswordCorrect) {
+                sendErrorCode(res, CredentialsAreNotCorrect)
+                return
+            }
             let token = this.createJWT(user)
             if (!token) {
                 sendErrorCode(res, InternalServerError)
@@ -107,10 +119,11 @@ export class UserApi {
                 }
             }
             res.status(200).send(result)
-        }).catch((error) => {
+        }
+        catch (error) {
             this.logger.error(error)
-            sendErrorCode(res, CredentialsAreNotCorrect)
-        })
+            sendErrorCode(res, InternalServerError)
+        }
     }
 
     verifyEmail(req: Request, res: Response) {
@@ -148,10 +161,10 @@ export class UserApi {
         let payload = req.body
         let updateImage = (payload.image != null)
 
-        try{
+        try {
             if (updateImage) {
                 const imageName = await this.imageManager.storeImageAsFile(payload.image)
-                await User.findByIdAndUpdate(req.authenticatedUser._id, { $set: {image: imageName}})
+                await User.findByIdAndUpdate(req.authenticatedUser._id, { $set: { image: imageName } })
                 const user = await User.findById(req.authenticatedUser._id)
                 sendSuccess(res, 200, reduceUser(user, true))
             }
@@ -159,19 +172,19 @@ export class UserApi {
                 sendErrorCode(res, ImageIsMissing)
             }
         }
-        catch(error){
+        catch (error) {
             this.logger.error(error)
             sendErrorCode(res, InternalServerError)
         }
     }
 
-    async editUserInformation(req: Request, res: Response){
+    async editUserInformation(req: Request, res: Response) {
         try {
             const payload = req.body as { firstname: string, lastname: string, email: string }
 
-            let setObject: any = { 
-                firstname: payload.firstname, 
-                lastname: payload.lastname, 
+            let setObject: any = {
+                firstname: payload.firstname,
+                lastname: payload.lastname,
                 email: payload.email
             }
 
@@ -179,51 +192,51 @@ export class UserApi {
                 setObject.emailVerified = false
             }
 
-            const mongoUpdateOperation = { 
+            const mongoUpdateOperation = {
                 $set: setObject
             }
             await User.findByIdAndUpdate(req.authenticatedUser._id, mongoUpdateOperation)
             const user = await User.findById(req.authenticatedUser._id)
             const myReducedUser = reduceUser(user, true)
-            sendSuccess(res, 200, { user : myReducedUser })
+            sendSuccess(res, 200, { user: myReducedUser })
         }
-        catch(error) {
+        catch (error) {
             this.logger.error(error)
             sendErrorCode(res, InternalServerError)
         }
     }
 
-    async changeUserPassword(req: Request, res: Response){
-        try{
+    async changeUserPassword(req: Request, res: Response) {
+        try {
             let payload = req.body as { oldPassword: string, newPassword: string, newPasswordRepeat: string }
-            if(!payload.oldPassword || !payload.newPassword || !payload.newPasswordRepeat){
+            if (!payload.oldPassword || !payload.newPassword || !payload.newPasswordRepeat) {
                 sendErrorCode(res, OldNewAndRepeatPasswordsRequired)
                 return
             }
-            if(payload.newPassword !== payload.newPasswordRepeat){
+            if (payload.newPassword !== payload.newPasswordRepeat) {
                 sendErrorCode(res, NewPasswordsDoNotMatch)
                 return
             }
             const user = await User.findOne({ _id: req.authenticatedUser._id })
             const isOldPasswordCorrect = await Crypto.comparePassword(payload.oldPassword, user.password)
-            if(!isOldPasswordCorrect){
+            if (!isOldPasswordCorrect) {
                 sendErrorCode(res, WrongPassword)
                 return
             }
             const newPassword = await Crypto.encryptPassword(payload.newPassword)
-            await User.findByIdAndUpdate(user._id, { $set : { password: newPassword }})
+            await User.findByIdAndUpdate(user._id, { $set: { password: newPassword } })
             sendSuccess(res, 200, {})
         }
-        catch(error){
+        catch (error) {
             this.logger.error(error)
             sendErrorCode(res, InternalServerError)
         }
     }
 
-    async resetPassword(req: Request, res: Response){
-        try{
+    async resetPassword(req: Request, res: Response) {
+        try {
             let payload = req.body as { email: string }
-            if (!payload.email){
+            if (!payload.email) {
                 sendErrorCode(res, EmailRequired)
                 return
             }
@@ -239,20 +252,20 @@ export class UserApi {
                 length: 12,
                 numbers: true
             })
-            
+
             const newPasswordEncrypted = await Crypto.encryptPassword(newPassword)
-            await User.findByIdAndUpdate(user._id, { $set : { password: newPasswordEncrypted }})
+            await User.findByIdAndUpdate(user._id, { $set: { password: newPasswordEncrypted } })
             this.mailer.sendPasswordEmail(user, newPassword)
             sendSuccess(res, 200, {})
         }
-        catch(error){
+        catch (error) {
             this.logger.error(error)
             sendErrorCode(res, InternalServerError)
         }
     }
 
     async resendVerificationEmail(req: Request, res: Response) {
-        try{
+        try {
             let userId = req.authenticatedUser._id
 
             const user = await User.findById(userId)
@@ -269,7 +282,7 @@ export class UserApi {
             await this.emailverification.create(user, false)
             sendSuccess(res, 200, {})
 
-        } catch(error){
+        } catch (error) {
             this.logger.error(error)
             sendErrorCode(res, Errors.InternalServerError)
         }
@@ -278,24 +291,24 @@ export class UserApi {
     @validate(deviceSchema)
     async registerDevice(req: Request, res: Response) {
         let payload = req.body as IDevice
-        try{
-           const device = await Device.findOneAndUpdate({ deviceId:payload.deviceId }, {
-            deviceId: payload.deviceId,
-            pushId: payload.pushId,
-            system: payload.system,
-            user: req.authenticatedUser._id
+        try {
+            const device = await Device.findOneAndUpdate({ deviceId: payload.deviceId }, {
+                deviceId: payload.deviceId,
+                pushId: payload.pushId,
+                system: payload.system,
+                user: req.authenticatedUser._id
             }, { upsert: true, new: true })
 
             const user = await User.findById(req.authenticatedUser._id)
             if (user.devices.indexOf(device._id) != -1) {
-                sendSuccess(res, 201, {device:device})
+                sendSuccess(res, 201, { device: device })
             } else {
                 user.devices.push(device.id);
                 await user.save()
-                sendSuccess(res, 201, {device:device})
+                sendSuccess(res, 201, { device: device })
             }
         }
-        catch(error){
+        catch (error) {
             this.logger.error(error)
             sendErrorCode(res, InternalServerError)
         }
@@ -308,7 +321,7 @@ export class UserApi {
 
                 return Promise.all(memberships.map((membership: IMembershipModel) => {
                     if (membership.team != null) {
-                        return Membership.count({team: (membership.team as any).id}).then(count => {
+                        return Membership.count({ team: (membership.team as any).id }).then(count => {
                             membership = membership.toJSON()
                             if (membership.team) {
                                 (<ITeam>membership.team).memberCount = count
@@ -328,17 +341,17 @@ export class UserApi {
                 } else {
                     Membership.find({ user: req.authenticatedUser._id }).populate('team').exec().then(ownMemberships => {
                         let extendedMemberships = memberships.filter((membership: IMembershipModel) => {
-                                return ownMemberships.find((ownMembership) => {
-                                    return ownMembership.team && ((<ITeamModel>ownMembership.team).id === (<ITeamModel>membership.team)._id.toString() || (<ITeamModel> membership.team).isPublic)
-                                })
-                            }).map((membership: IMembershipModel) => {
-                                let joined = (ownMemberships.find((ownMembership) => {
-                                    return ownMembership.team && ((ownMembership.team as any).id === (membership.team as any)._id.toString())
-                                }) !== undefined)
-                                let m = (membership.toJSON ? membership.toJSON() : membership)
-                                m.joined = joined
-                                return m
+                            return ownMemberships.find((ownMembership) => {
+                                return ownMembership.team && ((<ITeamModel>ownMembership.team).id === (<ITeamModel>membership.team)._id.toString() || (<ITeamModel>membership.team).isPublic)
                             })
+                        }).map((membership: IMembershipModel) => {
+                            let joined = (ownMemberships.find((ownMembership) => {
+                                return ownMembership.team && ((ownMembership.team as any).id === (membership.team as any)._id.toString())
+                            }) !== undefined)
+                            let m = (membership.toJSON ? membership.toJSON() : membership)
+                            m.joined = joined
+                            return m
+                        })
                         sendSuccess(res, 200, { memberships: extendedMemberships })
                     })
                 }
@@ -362,13 +375,9 @@ export class UserApi {
         return token
     }
 
-    private async checkUserCrendentials(email: string, password: string) {
-        const user = await User.findOne({ email: email })
-        const passwordCorrect = await Crypto.comparePassword(password, user.password)
-        if (passwordCorrect) {
-            return user
-        }
-        throw new Error('wrong password')
+    private async checkUserCrendentials(passwordInput: string, user: IUserModel) {
+        const passwordCorrect = await Crypto.comparePassword(passwordInput, user.password)
+        return passwordCorrect
     }
 
 }
