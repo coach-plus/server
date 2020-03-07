@@ -7,7 +7,7 @@ import { MembershipApi } from './api/membership'
 import { MetricsApi } from './api/metrics'
 import { Request, Response } from './interfaces'
 import { IResponseCode } from './responseCodes'
-import { InvitationsApi } from './api/invitations';
+import { InvitationsApi } from './api/invitations'
 
 
 @injectable()

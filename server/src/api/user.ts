@@ -101,7 +101,7 @@ export class UserApi {
                 sendErrorCode(res, UserNotFound)
                 return
             }
-            const isPasswordCorrect = await this.checkUserCrendentials(email, user)
+            const isPasswordCorrect = await this.checkUserCrendentials(password, user)
             if (!isPasswordCorrect) {
                 sendErrorCode(res, CredentialsAreNotCorrect)
                 return
