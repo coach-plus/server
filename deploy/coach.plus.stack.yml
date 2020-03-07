@@ -9,10 +9,12 @@ services:
         - "traefik.frontend.rule=Host:coach.plus"
         - "traefik.port=5200"
     configs:
-      - source: coach.plus.env.json_v2
+      - source: coach.plus.env.json_v3
         target: /app/server/.env.json
       - source: apns.key
         target: /app/server/apnsKey.p8
+      - source: coach.plus.apple-app-site-association
+        target: /app/server/assets/apple-app-site-association
     networks:
       - traefik
       - mongo
