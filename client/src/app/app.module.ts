@@ -6,6 +6,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { rootRouterConfig } from './app.routes';
 import { AppComponent } from './app.component';
 import * as $ from 'jquery';
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -13,7 +14,7 @@ import * as $ from 'jquery';
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'serverApp' }),
-    HttpModule,
+    HttpClientModule,
     BrowserAnimationsModule,
     RouterModule.forRoot(rootRouterConfig, { useHash: false, anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' })
   ],
