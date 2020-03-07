@@ -4,6 +4,7 @@ import { Routes, RouterModule } from '@angular/router';
 import { HomeComponent } from './home.component';
 import { TermsOfUseComponent } from './terms-of-use/terms-of-use.component';
 import { DataPrivacyComponent } from './data-privacy/data-privacy.component';
+import { ImpressumComponent } from './impressum/impressum.component';
 
 // Routes
 const routes: Routes = [
@@ -29,6 +30,14 @@ const routes: Routes = [
     data: {
       title: 'Coach+',
       content: 'Datenschutz'
+    }
+  },
+  {
+    path: 'impressum',
+    component: ImpressumComponent,
+    data: {
+      title: 'Coach+',
+      content: 'Impressum'
     }
   }
 ];
