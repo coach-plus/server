@@ -26,7 +26,9 @@ networks:
   mongo:
     external: true
 configs:
-  coach.plus.env.json_v2:
+  coach.plus.apple-app-site-association:
+    external: true
+  coach.plus.env.json_v3:
     external: true
   apns.key:
     external: true
