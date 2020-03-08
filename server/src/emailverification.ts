@@ -1,8 +1,7 @@
 import { Logger } from './logger'
 import { inject, injectable } from 'inversify'
 import { Verification, IUserModel, IVerification } from './models'
-import { IMailRequest } from './interfaces'
-import { Mailer } from "./mailer";
+import { Mailer } from "./mailer"
 import * as Uuid from 'uuid/v4'
 
 @injectable()

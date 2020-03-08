@@ -4,7 +4,7 @@ import { inject, injectable } from 'inversify'
 import { Invitation } from '../models'
 import { Request, Response } from '../interfaces'
 import { sendSuccess, sendErrorCode } from '../api'
-import { InternalServerError, JoinTokenNotValid } from '../responseCodes';
+import { InternalServerError, JoinTokenNotValid } from '../responseCodes'
 
 
 @injectable()
