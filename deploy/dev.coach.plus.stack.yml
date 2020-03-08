@@ -13,6 +13,8 @@ services:
         target: /app/server/.env.json
       - source: apns.key
         target: /app/server/apnsKey.p8
+      - source: dev.coach.plus.apple-app-site-association
+        target: /app/server/assets/apple-app-site-association
     networks:
       - traefik
       - mongo
@@ -24,6 +26,8 @@ networks:
   mongo:
     external: true
 configs:
+  dev.coach.plus.apple-app-site-association:
+    external: true
   dev.coach.plus.env.json_v2:
     external: true
   apns.key:
