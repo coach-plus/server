@@ -37,7 +37,7 @@
     "ngx-page-scroll": "^6.0.2",
     "ngx-page-scroll-core": "^6.0.2",
     "rxjs": "^6.5.2",
-    "swiper": "^4.5.0",
+    "swiper": "^6.5.1",
     "web-animations-js": "^2.3.1",
     "zone.js": "^0.9.1"
   },
