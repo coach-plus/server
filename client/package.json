@@ -30,7 +30,7 @@
     "bootstrap": "^4.3.1",
     "classlist.js": "^1.1.20150312",
     "core-js": "^2.5.7",
-    "express": "^4.15.2",
+    "express": "^4.17.3",
     "font-awesome": "^4.7.0",
     "jquery": "^3.4.1",
     "ngx-owl-carousel": "^2.0.7",
